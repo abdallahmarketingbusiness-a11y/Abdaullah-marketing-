@@ -1,6 +1,13 @@
 "use client";
-// app entry — hooks imported inside LangCtx block above
+
 import { useState, useEffect, useRef } from "react";
+import { createPackage } from "../services/packagesService";
+import Toast from "../components/Toast";
+import PackagesGallery from "../components/PackagesGallery";
+import PackageDetails from "../components/PackageDetails";
+import AdminLogin from "../components/AdminLogin";
+import AdminDashboard from "../components/AdminDashboard";
+import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 
 const GOLD = "#C9963A";
 const GOLD2 = "#E8BE6A";
@@ -225,8 +232,11 @@ function HeroPage({ setPage }) {
         <a href={WA_LINK} target="_blank" rel="noreferrer" className="font-black px-8 py-3 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
           🚀 ابدأ رحلتك معنا
         </a>
-        <button onClick={() => setPage("portfolio")} className="font-bold px-8 py-3 rounded-xl text-sm transition-all duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
-          شوف أعمالي
+        <button onClick={() => { setPage("home"); setTimeout(() => { const el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }, 80); }} className="font-bold px-8 py-3 rounded-xl text-sm transition-all duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
+          📦 الباقات
+        </button>
+        <button onClick={() => setPage("gallery")} className="font-bold px-8 py-3 rounded-xl text-sm transition-all duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
+          📁 الباقات المخصصة
         </button>
       </div>
       <div className="flex flex-wrap justify-center border-t border-b w-full max-w-2xl" style={{ borderColor: "#2A2A2A", animation: "fadeUp .9s .55s ease both" }}>
@@ -411,7 +421,689 @@ function TipsSection() {
   );
 }
 
-function PricingSection() {
+/* ===================== Build Your Package — config ===================== */
+/* Tweak any price here — nothing else in the component needs to change.  */
+const BUILDER_UNIT_PRICE = {
+  post: 60,      // extra post beyond the package's included amount
+  story: 40,     // extra story beyond the package's included amount
+  reel: 400,     // extra AI reel beyond the package's included amount
+  script: 250,   // extra script beyond the package's included amount (and for المحتوى section)
+  content: 120,  // كتابة محتوى (content writing, per piece)
+  designPerPlatform: 150, // كل تصميم إضافي لكل منصة في الهوية البصرية
+};
+
+const BUILD_PACKAGES = [
+  { id: 1, icon: "🥉", tier: "الأساسية", price: 1800, color: "#CD7F32", glow: "rgba(205,127,50,0.35)", base: { posts: 8, stories: 8, reels: 0, scripts: 0 } },
+  { id: 2, icon: "🥈", tier: "المتقدمة", price: 2800, color: "#C0C0C0", glow: "rgba(192,192,192,0.3)", base: { posts: 12, stories: 12, reels: 2, scripts: 2 } },
+  { id: 3, icon: "🥇", tier: "الاحترافية", price: 4500, color: GOLD, glow: "rgba(201,150,58,0.45)", base: { posts: 16, stories: 20, reels: 4, scripts: 4 } },
+  { id: 4, icon: "💎", tier: "الشاملة", price: 6500, color: "#6ee7f7", glow: "rgba(110,231,247,0.3)", base: { posts: 20, stories: 30, reels: 8, scripts: 8 } },
+];
+
+const WEBSITE_OPTIONS = [
+  { key: "landing", label: "Landing Page", icon: "🌐", tiers: [2500, 3000, 3500] },
+  { key: "company", label: "موقع شركة احترافي", icon: "🏢", tiers: [4500, 5500, 7000] },
+  { key: "store", label: "متجر إلكتروني", icon: "🛒", tiers: [6000, 8000, 10000] },
+  { key: "menu", label: "منيو إلكتروني QR للمطاعم", icon: "📱", tiers: [1500, 2000, 3000] },
+];
+
+const PLATFORM_LIST = ["Facebook", "Instagram", "TikTok", "X", "Snapchat", "LinkedIn", "YouTube", "Google Business"];
+
+const SOCIAL_PAGE_OPTIONS = [
+  { key: "facebook", label: "إنشاء صفحة Facebook" },
+  { key: "instagram", label: "إنشاء صفحة Instagram" },
+  { key: "tiktok", label: "إنشاء صفحة TikTok" },
+  { key: "x", label: "إنشاء صفحة X" },
+  { key: "linkedin", label: "إنشاء صفحة LinkedIn" },
+  { key: "youtube", label: "إنشاء قناة YouTube" },
+  { key: "googleBusiness", label: "إنشاء Google Business" },
+  { key: "metaBM", label: "ربط Meta Business Manager" },
+];
+const SOCIAL_PAGE_PRICE = 500;
+
+const AI_VIDEO_TIERS = [
+  { key: "basic", label: "Basic", price: 400 },
+  { key: "standard", label: "Standard", price: 700 },
+  { key: "premium", label: "Premium", price: 1000 },
+  { key: "cinematic", label: "Cinematic", price: 1500 },
+];
+
+const LOGO_TIERS = [800, 1200, 1500, 2000];
+const BRAND_TIERS = [3000, 5000, 8000];
+
+const ADS_OPTIONS = [
+  { key: "campaign", label: "إدارة حملة إعلانية ممولة", price: 1500 },
+  { key: "adCopy", label: "كتابة إعلان ممول", price: 300 },
+  { key: "fullCampaign", label: "كتابة حملة إعلانية كاملة", price: 700 },
+];
+
+/* ===================== small building blocks ===================== */
+
+function useCountUp(value, duration = 400) {
+  const [display, setDisplay] = useState(value);
+  const prevRef = useRef(value);
+  useEffect(() => {
+    const start = prevRef.current;
+    const end = value;
+    const startTime = performance.now();
+    let raf;
+    function tick(now) {
+      const progress = Math.min(1, (now - startTime) / duration);
+      setDisplay(Math.round(start + (end - start) * progress));
+      if (progress < 1) raf = requestAnimationFrame(tick);
+      else prevRef.current = end;
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return display;
+}
+
+function BCard({ children, style = {} }) {
+  return (
+    <div
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(201,150,58,0.15)",
+        borderRadius: 18,
+        padding: "22px 20px",
+        marginBottom: 18,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function BSectionTitle({ icon, children }) {
+  return (
+    <h3 style={{ fontFamily: "'Cairo',sans-serif", fontSize: 18, fontWeight: 900, color: GOLD2, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+      <span>{icon}</span>{children}
+    </h3>
+  );
+}
+
+function BCounter({ label, value, onChange, min = 0 }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <span style={{ color: "#ddd", fontSize: 14 }}>{label}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button
+          onClick={() => onChange(Math.max(min, value - 1))}
+          style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(201,150,58,0.3)", background: "rgba(201,150,58,0.08)", color: GOLD2, fontSize: 16, fontWeight: 900, cursor: "pointer" }}
+        >−</button>
+        <span style={{ minWidth: 26, textAlign: "center", color: "#fff", fontWeight: 800, fontSize: 15 }}>{value}</span>
+        <button
+          onClick={() => onChange(value + 1)}
+          style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(201,150,58,0.3)", background: "rgba(201,150,58,0.08)", color: GOLD2, fontSize: 16, fontWeight: 900, cursor: "pointer" }}
+        >+</button>
+      </div>
+    </div>
+  );
+}
+
+function BCheck({ label, checked, onChange, price }) {
+  return (
+    <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 0", borderBottom: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span
+          style={{
+            width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+            border: `1.5px solid ${checked ? GOLD : "rgba(255,255,255,0.25)"}`,
+            background: checked ? GOLD : "transparent",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#000", fontSize: 12, fontWeight: 900, transition: "all 0.2s",
+          }}
+        >{checked ? "✓" : ""}</span>
+        <span style={{ color: "#ddd", fontSize: 14 }}>{label}</span>
+      </span>
+      {price != null && <span style={{ color: GOLD2, fontSize: 13, fontWeight: 700 }}>{price.toLocaleString()} ج.م</span>}
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ display: "none" }} />
+    </label>
+  );
+}
+
+function BTierPicker({ tiers, value, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, marginBottom: 4 }}>
+      {tiers.map((price, i) => (
+        <button
+          key={i}
+          onClick={() => onChange(i)}
+          style={{
+            padding: "6px 14px",
+            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 800,
+            cursor: "pointer",
+            border: `1px solid ${value === i ? GOLD : "rgba(255,255,255,0.15)"}`,
+            background: value === i ? "rgba(201,150,58,0.15)" : "transparent",
+            color: value === i ? GOLD2 : "#999",
+          }}
+        >
+          {price.toLocaleString()} ج.م
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ===================== BuilderPage ===================== */
+
+function BuilderPage({ setPage, initialData }) {
+  useReveal();
+
+  // package + project name
+  const [pkgId, setPkgId] = useState(null);
+  const [projectName, setProjectName] = useState("");
+  const [savedName, setSavedName] = useState("");
+
+  // بيانات الباقة المخصصة (نظام الحفظ في Supabase)
+  const [businessName, setBusinessName] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [clientNotes, setClientNotes] = useState("");
+  const [saveToast, setSaveToast] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // package customization counters (absolute counts, base comes from package)
+  const [posts, setPosts] = useState(0);
+  const [stories, setStories] = useState(0);
+  const [reels, setReels] = useState(0);
+  const [scripts, setScripts] = useState(0);
+
+  // additional services
+  const [websites, setWebsites] = useState({}); // { landing: {on,tier}, ... }
+  const [identityOn, setIdentityOn] = useState(false);
+  const [platforms, setPlatforms] = useState({}); // { Facebook: 2 }
+  const [logo, setLogo] = useState({ on: false, tier: 0 });
+  const [brand, setBrand] = useState({ on: false, tier: 0 });
+  const [socialPages, setSocialPages] = useState({});
+  const [aiVideo, setAiVideo] = useState({ on: false, tier: "standard", qty: 1 });
+  const [ads, setAds] = useState({});
+  const [extraScripts, setExtraScripts] = useState(0);
+  const [extraContent, setExtraContent] = useState(0);
+
+  const pkg = BUILD_PACKAGES.find((p) => p.id === pkgId);
+
+  // لو جاي من "استخدام هذه الباقة" في صفحة التفاصيل، نملأ كل الحقول بنفس اختيارات
+  // الباقة الأصلية (نسخة جديدة قابلة للتعديل، من غير ما نلمس الباقة الأصلية في القاعدة)
+  useEffect(() => {
+    if (!initialData) return;
+    const s = initialData.builder_state || {};
+    setBusinessName(initialData.business_name || "");
+    setBusinessType(initialData.business_type || "");
+    setProjectName(initialData.package_name || "");
+    setSavedName(initialData.package_name || "");
+    setClientNotes(initialData.client_notes || "");
+    setPkgId(s.pkgId ?? null);
+    setPosts(initialData.posts_count || 0);
+    setStories(initialData.stories_count || 0);
+    setReels(initialData.reels_count || 0);
+    setScripts(initialData.scripts_count || 0);
+    setWebsites(s.websites || {});
+    setIdentityOn(!!s.identityOn);
+    setPlatforms(s.platforms || {});
+    setLogo(s.logo || { on: false, tier: 0 });
+    setBrand(s.brand || { on: false, tier: 0 });
+    setSocialPages(s.socialPages || {});
+    setAiVideo(s.aiVideo || { on: false, tier: "standard", qty: 1 });
+    setAds(s.ads || {});
+    setExtraScripts(s.extraScripts || 0);
+    setExtraContent(s.extraContent || 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]);
+
+  async function handleSavePackage() {
+    if (saving) return;
+    if (!pkg) {
+      setSaveToast({ type: "error", text: "اختار باقة الأول قبل الحفظ." });
+      return;
+    }
+    setSaving(true);
+    try {
+      await createPackage({
+        business_name: businessName,
+        business_type: businessType,
+        package_name: savedName || projectName,
+        base_package_id: pkg.id,
+        base_package_tier: pkg.tier,
+        posts_count: posts,
+        stories_count: stories,
+        reels_count: reels,
+        scripts_count: scripts,
+        base_price: pkg.price || 0,
+        extras_price: packageAddonsTotal + extrasTotal,
+        final_price: totalPrice,
+        client_notes: clientNotes,
+        builder_state: {
+          pkgId, websites, identityOn, platforms, logo, brand,
+          socialPages, aiVideo, ads, extraScripts, extraContent,
+        },
+      });
+      setSaveToast({ type: "success", text: "✅ تم حفظ الباقة بنجاح." });
+    } catch (e) {
+      setSaveToast({ type: "error", text: e.message || "حدث خطأ أثناء الحفظ، حاول تاني." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function selectPackage(p) {
+    setPkgId(p.id);
+    setPosts(p.base.posts);
+    setStories(p.base.stories);
+    setReels(p.base.reels);
+    setScripts(p.base.scripts);
+  }
+
+  function toggleWebsite(key) {
+    setWebsites((w) => ({ ...w, [key]: { on: !w[key]?.on, tier: w[key]?.tier ?? 0 } }));
+  }
+  function setWebsiteTier(key, tier) {
+    setWebsites((w) => ({ ...w, [key]: { ...w[key], tier } }));
+  }
+  function togglePlatform(name) {
+    setPlatforms((p) => {
+      const next = { ...p };
+      if (next[name]) delete next[name];
+      else next[name] = 1;
+      return next;
+    });
+  }
+  function setPlatformDesigns(name, qty) {
+    setPlatforms((p) => ({ ...p, [name]: qty }));
+  }
+  function toggleSocialPage(key) {
+    setSocialPages((s) => ({ ...s, [key]: !s[key] }));
+  }
+  function toggleAd(key) {
+    setAds((a) => ({ ...a, [key]: !a[key] }));
+  }
+
+  // ---- pricing ----
+  const websitesTotal = WEBSITE_OPTIONS.reduce((sum, w) => {
+    const sel = websites[w.key];
+    return sel?.on ? sum + w.tiers[sel.tier ?? 0] : sum;
+  }, 0);
+
+  const platformsDesignsTotal = Object.values(platforms).reduce((sum, qty) => sum + qty * BUILDER_UNIT_PRICE.designPerPlatform, 0);
+  const logoTotal = logo.on ? LOGO_TIERS[logo.tier] : 0;
+  const brandTotal = brand.on ? BRAND_TIERS[brand.tier] : 0;
+  const identityTotal = identityOn ? platformsDesignsTotal + logoTotal + brandTotal : 0;
+
+  const socialPagesTotal = Object.values(socialPages).filter(Boolean).length * SOCIAL_PAGE_PRICE;
+
+  const aiVideoTier = AI_VIDEO_TIERS.find((t) => t.key === aiVideo.tier);
+  const aiVideoTotal = aiVideo.on ? (aiVideoTier?.price || 0) * aiVideo.qty : 0;
+
+  const adsTotal = ADS_OPTIONS.reduce((sum, a) => (ads[a.key] ? sum + a.price : sum), 0);
+
+  const contentTotal = extraScripts * BUILDER_UNIT_PRICE.script + extraContent * BUILDER_UNIT_PRICE.content;
+
+  const packageAddonsTotal = pkg
+    ? Math.max(0, posts - pkg.base.posts) * BUILDER_UNIT_PRICE.post +
+      Math.max(0, stories - pkg.base.stories) * BUILDER_UNIT_PRICE.story +
+      Math.max(0, reels - pkg.base.reels) * BUILDER_UNIT_PRICE.reel +
+      Math.max(0, scripts - pkg.base.scripts) * BUILDER_UNIT_PRICE.script
+    : 0;
+
+  const extrasTotal = websitesTotal + identityTotal + socialPagesTotal + aiVideoTotal + adsTotal + contentTotal;
+  const totalPrice = (pkg?.price || 0) + packageAddonsTotal + extrasTotal;
+  const animatedTotal = useCountUp(totalPrice);
+
+  // ---- WhatsApp message ----
+  function buildWhatsAppLink() {
+    const lines = [];
+    lines.push("السلام عليكم.");
+    lines.push("أرغب في تنفيذ الباقة التالية.");
+    lines.push("");
+    lines.push("اسم المشروع:");
+    lines.push(savedName || projectName || "—");
+    lines.push("");
+    lines.push("اسم الباقة:");
+    lines.push(pkg ? `باقة ${pkg.tier}` : "—");
+    lines.push("");
+    lines.push("الخدمات:");
+    if (pkg) {
+      lines.push(`✓ ${posts} بوست`);
+      lines.push(`✓ ${stories} ستوري`);
+      if (reels > 0) lines.push(`✓ ${reels} ريلز`);
+      if (scripts > 0) lines.push(`✓ ${scripts} سكربت`);
+    }
+    WEBSITE_OPTIONS.forEach((w) => {
+      if (websites[w.key]?.on) lines.push(`✓ ${w.label}`);
+    });
+    if (identityOn) {
+      const chosenPlatforms = Object.keys(platforms);
+      if (chosenPlatforms.length || logo.on || brand.on) lines.push("✓ هوية بصرية:");
+      chosenPlatforms.forEach((name) => lines.push(`   - ${name} (${platforms[name]} تصميم)`));
+      if (logo.on) lines.push("   - تصميم Logo");
+      if (brand.on) lines.push("   - Brand Identity كاملة");
+    }
+    SOCIAL_PAGE_OPTIONS.forEach((s) => {
+      if (socialPages[s.key]) lines.push(`✓ ${s.label}`);
+    });
+    if (aiVideo.on) lines.push(`✓ فيديو AI (${aiVideoTier?.label}) × ${aiVideo.qty}`);
+    ADS_OPTIONS.forEach((a) => {
+      if (ads[a.key]) lines.push(`✓ ${a.label}`);
+    });
+    if (extraScripts > 0) lines.push(`✓ ${extraScripts} سكربت إضافي`);
+    if (extraContent > 0) lines.push(`✓ ${extraContent} محتوى مكتوب إضافي`);
+    lines.push("");
+    lines.push("السعر النهائي:");
+    lines.push(`${totalPrice.toLocaleString()} جنيه مصري`);
+    lines.push("");
+    lines.push("الرجاء التواصل معي.");
+    return `https://wa.me/201069032563?text=${encodeURIComponent(lines.join("\n"))}`;
+  }
+
+  return (
+    <div dir="rtl" style={{ background: "#060606", minHeight: "100vh", paddingTop: 110, paddingBottom: 60 }}>
+      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* ===== Main column ===== */}
+        <div className="lg:col-span-2" style={{ minWidth: 0 }}>
+          <Reveal>
+            <button
+              onClick={() => setPage("home")}
+              style={{ background: "none", border: "none", color: "#999", fontSize: 13, cursor: "pointer", marginBottom: 20, display: "flex", alignItems: "center", gap: 6 }}
+            >
+              → رجوع للرئيسية
+            </button>
+            <h1 style={{ fontFamily: "'Cairo',sans-serif", fontSize: "clamp(26px,4vw,38px)", fontWeight: 900, color: "#fff", marginBottom: 8 }}>
+              <GoldText>✨ خصص باقتك</GoldText>
+            </h1>
+            <p style={{ color: "#888", fontSize: 14, marginBottom: 30 }}>اختار احتياجاتك خطوة بخطوة، والسعر بيتحدث لحظياً</p>
+          </Reveal>
+
+          {/* Project name */}
+          <Reveal>
+            <BCard>
+              <BSectionTitle icon="🎨">اسم الباقة</BSectionTitle>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <input
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder="مثلاً: باقة مطعم السلطان"
+                  style={{
+                    flex: 1, minWidth: 200, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,150,58,0.2)",
+                    borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 14, outline: "none",
+                  }}
+                />
+                <button
+                  onClick={() => setSavedName(projectName)}
+                  style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: `linear-gradient(135deg,${GOLD},${GOLD2})`, color: "#000", fontWeight: 800, fontSize: 13, cursor: "pointer" }}
+                >
+                  حفظ الاسم
+                </button>
+              </div>
+              {savedName && <p style={{ color: GOLD2, fontSize: 12, marginTop: 10 }}>✓ تم حفظ الاسم: {savedName}</p>}
+            </BCard>
+          </Reveal>
+
+          {/* Business info (for saving the package) */}
+          <Reveal>
+            <BCard>
+              <BSectionTitle icon="🏢">بيانات النشاط</BSectionTitle>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 10 }}>
+                <input
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="اسم النشاط (مثلاً: مطعم السلطان)"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,150,58,0.2)", borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 14, outline: "none" }}
+                />
+                <input
+                  list="business-type-options"
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value)}
+                  placeholder="نوع النشاط (مطعم، كافيه، عيادة...)"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,150,58,0.2)", borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 14, outline: "none" }}
+                />
+                <datalist id="business-type-options">
+                  <option value="مطعم" /><option value="كافيه" /><option value="عيادة" />
+                  <option value="متجر إلكتروني" /><option value="صالون" /><option value="عقارات" />
+                </datalist>
+              </div>
+              <textarea
+                value={clientNotes}
+                onChange={(e) => setClientNotes(e.target.value)}
+                placeholder="ملاحظات إضافية (اختياري)"
+                rows={3}
+                style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,150,58,0.2)", borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 14, outline: "none", resize: "vertical" }}
+              />
+            </BCard>
+          </Reveal>
+
+          {/* Package selection */}
+          <Reveal>
+            <BCard>
+              <BSectionTitle icon="📦">اختار الباقة</BSectionTitle>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+                {BUILD_PACKAGES.map((p) => {
+                  const isSel = pkgId === p.id;
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => selectPackage(p)}
+                      style={{
+                        cursor: "pointer", textAlign: "center", padding: "18px 10px", borderRadius: 14,
+                        border: `1.5px solid ${isSel ? p.color : "rgba(255,255,255,0.08)"}`,
+                        background: isSel ? `${p.color}14` : "rgba(255,255,255,0.02)",
+                        boxShadow: isSel ? `0 0 24px ${p.glow}` : "none",
+                        transition: "all 0.25s",
+                      }}
+                    >
+                      <div style={{ fontSize: 30, marginBottom: 6 }}>{p.icon}</div>
+                      <div style={{ color: "#fff", fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{p.tier}</div>
+                      <div style={{ color: p.color, fontWeight: 900, fontSize: 16 }}>{p.price.toLocaleString()} ج.م</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </BCard>
+          </Reveal>
+
+          {/* Package customization */}
+          {pkg && (
+            <Reveal>
+              <BCard>
+                <BSectionTitle icon="⚙">تخصيص الباقة</BSectionTitle>
+                <BCounter label="المنشورات" value={posts} onChange={setPosts} min={0} />
+                <BCounter label="الستوري" value={stories} onChange={setStories} min={0} />
+                <BCounter label="الريلز" value={reels} onChange={setReels} min={0} />
+                <BCounter label="السكربتات" value={scripts} onChange={setScripts} min={0} />
+                <p style={{ color: "#666", fontSize: 11, marginTop: 12 }}>
+                  الكميات الأساسية داخلة ضمن سعر الباقة — أي زيادة عنها بيتضاف سعرها، والتقليل عن الأساسي مايخصمش من سعر الباقة.
+                </p>
+              </BCard>
+            </Reveal>
+          )}
+
+          {/* Additional services */}
+          {pkg && (
+            <Reveal>
+              <div>
+                <h2 style={{ fontFamily: "'Cairo',sans-serif", fontSize: 20, fontWeight: 900, color: "#fff", margin: "30px 0 16px" }}>
+                  ➕ خدمات إضافية
+                </h2>
+
+                {/* Websites */}
+                <BCard>
+                  <BSectionTitle icon="🌐">المواقع</BSectionTitle>
+                  {WEBSITE_OPTIONS.map((w) => (
+                    <div key={w.key} style={{ marginBottom: 4 }}>
+                      <BCheck label={`${w.icon} ${w.label}`} checked={!!websites[w.key]?.on} onChange={() => toggleWebsite(w.key)} />
+                      {websites[w.key]?.on && (
+                        <BTierPicker tiers={w.tiers} value={websites[w.key]?.tier ?? 0} onChange={(t) => setWebsiteTier(w.key, t)} />
+                      )}
+                    </div>
+                  ))}
+                </BCard>
+
+                {/* Identity */}
+                <BCard>
+                  <BSectionTitle icon="🎨">الهوية البصرية</BSectionTitle>
+                  <BCheck label="أريد تأسيس هوية بصرية" checked={identityOn} onChange={setIdentityOn} />
+                  {identityOn && (
+                    <div style={{ marginTop: 14 }}>
+                      <p style={{ color: "#999", fontSize: 13, marginBottom: 10 }}>اختر المنصات المطلوبة</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                        {PLATFORM_LIST.map((name) => {
+                          const sel = platforms[name] != null;
+                          return (
+                            <button
+                              key={name}
+                              onClick={() => togglePlatform(name)}
+                              style={{
+                                padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                                border: `1px solid ${sel ? GOLD : "rgba(255,255,255,0.15)"}`,
+                                background: sel ? "rgba(201,150,58,0.15)" : "transparent",
+                                color: sel ? GOLD2 : "#999",
+                              }}
+                            >
+                              {sel ? "☑" : "☐"} {name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {Object.keys(platforms).length > 0 && (
+                        <div style={{ marginBottom: 10 }}>
+                          {Object.keys(platforms).map((name) => (
+                            <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                              <span style={{ color: "#ccc", fontSize: 13 }}>عدد التصميمات لـ {name}</span>
+                              <select
+                                value={platforms[name]}
+                                onChange={(e) => setPlatformDesigns(name, Number(e.target.value))}
+                                style={{ background: "#111", color: "#fff", border: "1px solid rgba(201,150,58,0.3)", borderRadius: 8, padding: "4px 10px", fontSize: 13 }}
+                              >
+                                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                                  <option key={n} value={n}>{n}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <BCheck label="تصميم Logo" checked={logo.on} onChange={(v) => setLogo((l) => ({ ...l, on: v }))} />
+                      {logo.on && <BTierPicker tiers={LOGO_TIERS} value={logo.tier} onChange={(t) => setLogo((l) => ({ ...l, tier: t }))} />}
+                      <BCheck label="Brand Identity كاملة" checked={brand.on} onChange={(v) => setBrand((b) => ({ ...b, on: v }))} />
+                      {brand.on && <BTierPicker tiers={BRAND_TIERS} value={brand.tier} onChange={(t) => setBrand((b) => ({ ...b, tier: t }))} />}
+                    </div>
+                  )}
+                </BCard>
+
+                {/* Social pages */}
+                <BCard>
+                  <BSectionTitle icon="📱">صفحات التواصل</BSectionTitle>
+                  {SOCIAL_PAGE_OPTIONS.map((s) => (
+                    <BCheck key={s.key} label={s.label} checked={!!socialPages[s.key]} onChange={() => toggleSocialPage(s.key)} price={SOCIAL_PAGE_PRICE} />
+                  ))}
+                </BCard>
+
+                {/* AI Video */}
+                <BCard>
+                  <BSectionTitle icon="🤖">الفيديوهات</BSectionTitle>
+                  <BCheck label="فيديو AI" checked={aiVideo.on} onChange={(v) => setAiVideo((a) => ({ ...a, on: v }))} />
+                  {aiVideo.on && (
+                    <>
+                      <BTierPicker tiers={AI_VIDEO_TIERS.map((t) => t.price)} value={AI_VIDEO_TIERS.findIndex((t) => t.key === aiVideo.tier)} onChange={(i) => setAiVideo((a) => ({ ...a, tier: AI_VIDEO_TIERS[i].key }))} />
+                      <BCounter label="عدد الفيديوهات" value={aiVideo.qty} onChange={(v) => setAiVideo((a) => ({ ...a, qty: Math.max(1, v) }))} min={1} />
+                    </>
+                  )}
+                </BCard>
+
+                {/* Ads */}
+                <BCard>
+                  <BSectionTitle icon="📈">الإعلانات</BSectionTitle>
+                  {ADS_OPTIONS.map((a) => (
+                    <BCheck key={a.key} label={a.label} checked={!!ads[a.key]} onChange={() => toggleAd(a.key)} price={a.price} />
+                  ))}
+                  <p style={{ color: "#e8a13a", fontSize: 11, marginTop: 12 }}>
+                    ⚠️ ميزانية الإعلانات لا تدخل ضمن السعر ويتم دفعها بواسطة العميل مباشرة.
+                  </p>
+                </BCard>
+
+                {/* Content */}
+                <BCard>
+                  <BSectionTitle icon="📄">المحتوى</BSectionTitle>
+                  <BCounter label={`كتابة سكربت (${BUILDER_UNIT_PRICE.script} ج.م)`} value={extraScripts} onChange={setExtraScripts} />
+                  <BCounter label={`كتابة محتوى (${BUILDER_UNIT_PRICE.content} ج.م)`} value={extraContent} onChange={setExtraContent} />
+                </BCard>
+              </div>
+            </Reveal>
+          )}
+
+          {!pkg && (
+            <p style={{ color: "#777", fontSize: 14, textAlign: "center", marginTop: 20 }}>
+              اختار باقة الأول عشان تظهرلك خيارات التخصيص والخدمات الإضافية ⬆
+            </p>
+          )}
+        </div>
+
+        {/* ===== Sticky summary ===== */}
+        <div style={{ alignSelf: "start", position: "sticky", top: 100 }}>
+          <div style={{ background: "linear-gradient(160deg,#120c02,#080602)", border: `1px solid rgba(201,150,58,0.3)`, borderRadius: 20, padding: "22px 20px", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
+            <h3 style={{ fontFamily: "'Cairo',sans-serif", fontSize: 16, fontWeight: 900, color: GOLD2, marginBottom: 14 }}>💰 ملخص الطلب</h3>
+
+            <div style={{ fontSize: 13, color: "#ccc", lineHeight: 2 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><span>اسم المشروع</span><span style={{ color: "#fff" }}>{savedName || "—"}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><span>الباقة</span><span style={{ color: "#fff" }}>{pkg ? pkg.tier : "—"}</span></div>
+              {pkg && (
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>الكميات</span>
+                  <span style={{ color: "#fff", fontSize: 11, textAlign: "left" }}>{posts} بوست / {stories} ستوري / {reels} ريلز / {scripts} سكربت</span>
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "space-between" }}><span>سعر الباقة</span><span style={{ color: "#fff" }}>{(pkg?.price || 0).toLocaleString()} ج.م</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><span>سعر الإضافات</span><span style={{ color: "#fff" }}>{(packageAddonsTotal + extrasTotal).toLocaleString()} ج.م</span></div>
+            </div>
+
+            <div style={{ borderTop: "1px solid rgba(201,150,58,0.2)", marginTop: 14, paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span style={{ color: "#999", fontSize: 13, fontWeight: 700 }}>الإجمالي</span>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 28, fontWeight: 900, color: GOLD3 }}>
+                {animatedTotal.toLocaleString()} <span style={{ fontSize: 13, color: "#999" }}>ج.م</span>
+              </span>
+            </div>
+
+            <button
+              onClick={handleSavePackage}
+              disabled={!pkg || saving}
+              style={{
+                display: "block", width: "100%", textAlign: "center", marginTop: 20, padding: "13px 0", borderRadius: 14,
+                fontWeight: 800, fontSize: 14, border: `1.5px solid ${pkg ? GOLD : "rgba(255,255,255,0.1)"}`,
+                background: "transparent",
+                color: pkg ? GOLD2 : "#555",
+                cursor: pkg && !saving ? "pointer" : "not-allowed",
+              }}
+            >
+              {saving ? "جاري الحفظ..." : "💾 حفظ الباقة"}
+            </button>
+
+            <a
+              href={pkg ? buildWhatsAppLink() : undefined}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => { if (!pkg) e.preventDefault(); }}
+              style={{
+                display: "block", textAlign: "center", marginTop: 10, padding: "14px 0", borderRadius: 14,
+                fontWeight: 900, fontSize: 15, textDecoration: "none",
+                background: pkg ? `linear-gradient(135deg,${GOLD},${GOLD2})` : "rgba(255,255,255,0.06)",
+                color: pkg ? "#000" : "#555",
+                cursor: pkg ? "pointer" : "not-allowed",
+                boxShadow: pkg ? "0 8px 28px rgba(201,150,58,0.35)" : "none",
+              }}
+            >
+              🚀 إرسال الطلب
+            </a>
+          </div>
+        </div>
+      </div>
+      <Toast toast={saveToast} onClose={() => setSaveToast(null)} />
+    </div>
+  );
+}
+
+
+function PricingSection({ setPage }) {
   const [active, setActive] = useState(null);
   const WA = WA_LINK;
 
@@ -420,7 +1112,7 @@ function PricingSection() {
       id: 1,
       icon: "🥉",
       tier: "الأساسية",
-      price: "1,500",
+      price: "1,800",
       badge: null,
       color: "#CD7F32",
       glow: "rgba(205,127,50,0.35)",
@@ -428,15 +1120,16 @@ function PricingSection() {
       features: [
         "8 بوستات احترافية",
         "8 ستوري",
-        "تعديلين على كل تصميم",
-        "جدولة المحتوى الأسبوعي",
+        "كتابة المحتوى التسويقي",
+        "جدولة المحتوى",
+        "تعديلين لكل تصميم",
       ],
     },
     {
       id: 2,
       icon: "🥈",
       tier: "المتقدمة",
-      price: "3,000",
+      price: "2,800",
       badge: null,
       color: "#C0C0C0",
       glow: "rgba(192,192,192,0.3)",
@@ -444,16 +1137,18 @@ function PricingSection() {
       features: [
         "12 بوست احترافي",
         "12 ستوري",
-        "2 فيديو ريلز قصير",
-        "كتابة الكابشن التسويقي",
-        "تعديلات مفتوحة خلال الشهر",
+        "كتابة المحتوى التسويقي",
+        "2 فيديو ريلز احترافية بالذكاء الاصطناعي",
+        "كتابة 2 سكربت تصوير للريلز",
+        "تصميم العروض والخصومات",
+        "إدارة الحملات الإعلانية الممولة (ميزانية الإعلانات على العميل)",
       ],
     },
     {
       id: 3,
       icon: "🥇",
       tier: "الاحترافية",
-      price: "5,000",
+      price: "4,500",
       badge: "الأكثر طلباً",
       color: GOLD,
       glow: "rgba(201,150,58,0.45)",
@@ -461,17 +1156,19 @@ function PricingSection() {
       features: [
         "16 بوست احترافي",
         "20 ستوري",
-        "4 فيديوهات ريلز احترافية",
-        "تصميم عروض ومناسبات",
-        "إدارة المحتوى وخطة تسويقية شهرية",
-        "متابعة الحملات الإعلانية",
+        "كتابة المحتوى التسويقي",
+        "4 فيديوهات ريلز بالذكاء الاصطناعي",
+        "كتابة سكربتات الريلز والإعلانات",
+        "خطة محتوى شهرية",
+        "إدارة وتحسين الحملات الإعلانية (ميزانية الإعلانات على العميل)",
+        "تقرير أداء شهري",
       ],
     },
     {
       id: 4,
       icon: "💎",
       tier: "الشاملة",
-      price: "8,000",
+      price: "6,500",
       badge: null,
       color: "#6ee7f7",
       glow: "rgba(110,231,247,0.3)",
@@ -479,43 +1176,34 @@ function PricingSection() {
       features: [
         "20 بوست احترافي",
         "30 ستوري",
-        "8 فيديوهات ريلز",
-        "تصوير ومونتاج (لو متاح)",
-        "إدارة صفحات السوشيال ميديا",
-        "إنشاء الحملات الإعلانية ومتابعتها",
-        "تقرير أداء شهري",
-      ],
-    },
-    {
-      id: 5,
-      icon: "🚀",
-      tier: "التجريبية",
-      price: "2,000",
-      badge: "للمطاعم والكافيهات",
-      color: "#a78bfa",
-      glow: "rgba(167,139,250,0.35)",
-      gradient: "linear-gradient(135deg,#0d0020,#1a0035)",
-      features: [
-        "12 بوست احترافي شهرياً",
-        "12 ستوري تفاعلية",
-        "2 فيديو ريلز احترافي",
-        "كتابة كابشن تسويقي لكل بوست",
-        "تصميم العروض والخصومات الشهرية",
-        "تعديلات على التصميمات عند الحاجة",
-        "خطة محتوى بسيطة للشهر",
+        "كتابة المحتوى التسويقي",
+        "8 فيديوهات ريلز بالذكاء الاصطناعي",
+        "كتابة سكربتات الريلز والإعلانات",
+        "خطة تسويقية شهرية",
+        "إدارة جميع منصات التواصل الاجتماعي",
+        "إدارة وتحسين الحملات الإعلانية (ميزانية الإعلانات على العميل)",
+        "تقرير وتحليل أداء شهري",
       ],
     },
   ];
 
   const extras = [
-    { label: "تصميم بوست منفرد", price: "200 – 400 جنيه" },
-    { label: "تصميم منيو مطعم", price: "500 جنيه" },
-    { label: "تصميم لوجو", price: "300 جنيه" },
-    { label: "فيديو ريلز احترافي", price: "300 – 1,000 جنيه" },
+    { label: "Landing Page", price: "2,500 – 3,500 جنيه" },
+    { label: "موقع شركة احترافي", price: "4,500 – 7,000 جنيه" },
+    { label: "متجر إلكتروني", price: "6,000 – 10,000 جنيه" },
+    { label: "منيو إلكتروني QR للمطاعم", price: "1,500 – 3,000 جنيه" },
+    { label: "إنشاء صفحة فيسبوك / إنستجرام", price: "500 جنيه" },
+    { label: "ربط الصفحة بـ Meta Business", price: "500 جنيه" },
+    { label: "تصميم لوجو احترافي", price: "800 – 2,000 جنيه" },
+    { label: "هوية بصرية كاملة", price: "3,000 – 8,000 جنيه" },
+    { label: "فيديو تسويقي بالذكاء الاصطناعي", price: "400 – 1,500 جنيه" },
+    { label: "سكربت ريلز احترافي", price: "250 جنيه" },
+    { label: "إعلان ممول (Ad Copy)", price: "300 جنيه" },
+    { label: "إنشاء وإدارة حملة إعلانية شهرية", price: "1,500 جنيه / شهر" },
   ];
 
   return (
-    <section dir="rtl" style={{ background: "linear-gradient(180deg,#060606 0%,#0a0802 50%,#060606 100%)", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
+    <section id="pricing" dir="rtl" style={{ background: "linear-gradient(180deg,#060606 0%,#0a0802 50%,#060606 100%)", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
       {/* Background glow orbs */}
       <div style={{ position: "absolute", top: "10%", left: "5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(201,150,58,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: "10%", right: "5%", width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(110,231,247,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
@@ -612,6 +1300,34 @@ function PricingSection() {
           })}
         </div>
 
+        {/* Build Your Package CTA */}
+        <div className="text-center" style={{ marginBottom: 60 }}>
+          <button
+            onClick={() => { setPage && setPage("builder"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "16px 44px",
+              borderRadius: 50,
+              border: "none",
+              cursor: "pointer",
+              background: `linear-gradient(135deg,${GOLD},${GOLD2})`,
+              color: "#000",
+              fontFamily: "'Cairo',sans-serif",
+              fontSize: 16,
+              fontWeight: 900,
+              letterSpacing: 0.5,
+              boxShadow: "0 8px 32px rgba(201,150,58,0.4)",
+              transition: "transform 0.25s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+          >
+            ✨ خصص باقتك
+          </button>
+        </div>
+
         {/* Extras Section */}
         <div style={{ borderTop: "1px solid rgba(201,150,58,0.15)", paddingTop: 50 }}>
           <div className="text-center mb-10">
@@ -628,6 +1344,9 @@ function PricingSection() {
               </div>
             ))}
           </div>
+          <p style={{ color: "#666", fontSize: 12, marginTop: 18, textAlign: "center" }}>
+            ⚠️ ميزانية الإعلانات الممولة لا تشمل سعر الخدمة، ويتم دفعها مباشرة من قبل العميل على حساب Meta.
+          </p>
         </div>
 
         {/* CTA Banner */}
@@ -1052,6 +1771,50 @@ function Footer({ setPage }) {
 
 export default function App() {
   const [page, setPage] = useState("home");
+  const [selectedPackageId, setSelectedPackageId] = useState(null);
+  const [builderInitialData, setBuilderInitialData] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // نظام الباقات المخصصة يستخدم روابط hash (#gallery, #admin, #package-details?id=..)
+  // عشان صفحة /admin تكون قابلة للوصول برابط مباشر وغير موجودة في القائمة العادية،
+  // من غير ما نضيف مكتبة routing جديدة للمشروع.
+  useEffect(() => {
+    function syncFromHash() {
+      const hash = window.location.hash.replace("#", "");
+      if (!hash) return;
+      const [route, queryString] = hash.split("?");
+      const params = new URLSearchParams(queryString || "");
+      if (route === "gallery") setPage("gallery");
+      else if (route === "package-details") {
+        setSelectedPackageId(params.get("id"));
+        setPage("package-details");
+      } else if (route === "admin") setPage("admin");
+    }
+    syncFromHash();
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, []);
+
+  useEffect(() => {
+    if (["gallery", "package-details", "admin", "admin-login"].includes(page)) {
+      const hash =
+        page === "package-details" && selectedPackageId
+          ? `#package-details?id=${selectedPackageId}`
+          : `#${page === "admin-login" ? "admin" : page}`;
+      if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
+    } else if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [page, selectedPackageId]);
+
+  // لو داخل على #admin ومعاه Session أدمن شغالة بالفعل، يدخل على طول من غير Login
+  useEffect(() => {
+    if (page !== "admin") return;
+    getCurrentSession().then(async (session) => {
+      if (session) setIsAdmin(await isCurrentUserAdmin());
+    });
+  }, [page]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [page]);
@@ -1115,7 +1878,7 @@ export default function App() {
           <FeaturedProjectSection />
           <PortfolioSection />
           <TipsSection />
-          <PricingSection />
+          <PricingSection setPage={setPage} />
           <WhySection />
           <TestimonialsSection />
           <ProcessSection />
@@ -1123,6 +1886,34 @@ export default function App() {
       )}
       {page === "about" && <AboutPage setPage={setPage} />}
       {page === "contact" && <ContactPage />}
+      {page === "builder" && <BuilderPage setPage={setPage} initialData={builderInitialData} />}
+
+      {page === "gallery" && (
+        <PackagesGallery
+          onOpenPackage={(id) => { setSelectedPackageId(id); setPage("package-details"); }}
+          onCreateNew={() => { setBuilderInitialData(null); setPage("builder"); }}
+          onBack={() => setPage("home")}
+        />
+      )}
+
+      {page === "package-details" && (
+        <PackageDetails
+          packageId={selectedPackageId}
+          onUseAsNew={(pkgData) => { setBuilderInitialData(pkgData); setPage("builder"); }}
+          onBack={() => setPage("gallery")}
+        />
+      )}
+
+      {page === "admin" && !isAdmin && (
+        <AdminLogin onSuccess={() => setIsAdmin(true)} />
+      )}
+      {page === "admin" && isAdmin && (
+        <AdminDashboard
+          onLogout={async () => { await signOutAdmin(); setIsAdmin(false); setPage("home"); }}
+          onOpenPackage={(id) => { setSelectedPackageId(id); setPage("package-details"); }}
+        />
+      )}
+
       <Footer setPage={setPage} />
     </>
   );
