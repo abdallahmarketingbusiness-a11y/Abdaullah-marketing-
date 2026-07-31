@@ -7,6 +7,7 @@ import PackagesGallery from "../components/PackagesGallery";
 import PackageDetails from "../components/PackageDetails";
 import AdminLogin from "../components/AdminLogin";
 import AdminDashboard from "../components/AdminDashboard";
+import PortfolioGallery from "../components/PortfolioGallery";
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 
 const GOLD = "#C9963A";
@@ -370,7 +371,10 @@ function PortfolioSection() {
         </div>
       )}
 
-      <Reveal className="text-center mt-14">
+      <Reveal className="text-center mt-14 flex flex-wrap justify-center gap-4">
+        <a href="#portfolio-gallery" className="inline-block font-black px-8 py-4 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: "transparent", border: `1px solid ${GOLD}`, color: GOLD }}>
+          🎨 شاهد كل الأعمال
+        </a>
         <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
           🚀 ابدأ مشروعك الآن
         </a>
@@ -1887,6 +1891,7 @@ export default function App() {
         setSelectedPackageId(params.get("id"));
         setPage("package-details");
       } else if (route === "admin") setPage("admin");
+      else if (route === "portfolio-gallery") setPage("portfolio-gallery");
     }
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
@@ -1894,7 +1899,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (["gallery", "package-details", "admin", "admin-login"].includes(page)) {
+    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery"].includes(page)) {
       const hash =
         page === "package-details" && selectedPackageId
           ? `#package-details?id=${selectedPackageId}`
@@ -2001,6 +2006,8 @@ export default function App() {
           onBack={() => setPage("gallery")}
         />
       )}
+
+      {page === "portfolio-gallery" && <PortfolioGallery />}
 
       {page === "admin" && !isAdmin && (
         <AdminLogin onSuccess={() => setIsAdmin(true)} />

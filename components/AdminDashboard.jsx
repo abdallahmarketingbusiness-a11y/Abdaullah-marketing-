@@ -8,6 +8,10 @@ import {
   updatePackage,
 } from "../services/packagesService";
 import { signOutAdmin } from "../services/authService";
+import DashboardOverview from "./DashboardOverview";
+import PortfolioManager from "./PortfolioManager";
+import TestimonialsManager from "./TestimonialsManager";
+import AboutManager from "./AboutManager";
 
 function QuickEditModal({ pkg, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -76,7 +80,16 @@ function QuickEditModal({ pkg, onClose, onSaved }) {
   );
 }
 
+const TABS = [
+  { id: "overview", label: "📊 لوحة القيادة" },
+  { id: "packages", label: "🛠️ الباقات" },
+  { id: "portfolio", label: "🖼️ معرض الأعمال" },
+  { id: "testimonials", label: "🎓 الشهادات" },
+  { id: "about", label: "👤 من نحن والإعدادات" },
+];
+
 export default function AdminDashboard({ onLogout, onOpenPackage }) {
+  const [tab, setTab] = useState("overview");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -133,9 +146,9 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
   return (
     <div dir="rtl" style={{ background: BG, minHeight: "100vh", paddingTop: 110, paddingBottom: 60 }}>
       <div className="max-w-6xl mx-auto px-4">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 26, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
           <h1 style={{ fontFamily: FONT, fontSize: "clamp(22px,3.5vw,32px)", fontWeight: 900, color: "#fff" }}>
-            🛠️ لوحة تحكم الباقات
+            🛠️ لوحة السوبر أدمن
           </h1>
           <button
             onClick={onLogout}
@@ -145,7 +158,29 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
           </button>
         </div>
 
-        {loading ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 26 }}>
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                padding: "9px 16px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                border: `1px solid ${tab === t.id ? GOLD : "rgba(255,255,255,0.1)"}`,
+                background: tab === t.id ? "rgba(201,150,58,0.12)" : "none",
+                color: tab === t.id ? GOLD3 : "#aaa",
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "overview" && <DashboardOverview />}
+        {tab === "portfolio" && <PortfolioManager />}
+        {tab === "testimonials" && <TestimonialsManager />}
+        {tab === "about" && <AboutManager />}
+
+        {tab === "packages" && (loading ? (
           <p style={{ color: "#888" }}>جاري التحميل...</p>
         ) : items.length === 0 ? (
           <p style={{ color: "#888" }}>لا توجد باقات حتى الآن.</p>
@@ -182,7 +217,7 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
               </div>
             ))}
           </div>
-        )}
+        ))}
       </div>
 
       {editing && (
