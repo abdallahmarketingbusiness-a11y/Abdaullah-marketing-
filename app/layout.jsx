@@ -4,11 +4,6 @@ export const metadata = {
   metadataBase: new URL('https://abdaullah-marketing-3dmf.vercel.app'),
   title: 'Abdullah Marketing',
   description: 'Social Media Marketing',
-
-  verification: {
-    google: 'kHkmuE5WSfzmppSQ3W_PiYfOJNuaEZ5fbF1iFx7ohms',
-  },
-
   openGraph: {
     title: 'Abdullah Marketing',
     description: 'Social Media Marketing',
@@ -25,7 +20,6 @@ export const metadata = {
     locale: 'ar_EG',
     type: 'website',
   },
-
   twitter: {
     card: 'summary_large_image',
     title: 'Abdullah Marketing',

@@ -8,6 +8,13 @@ import PackageDetails from "../components/PackageDetails";
 import AdminLogin from "../components/AdminLogin";
 import AdminDashboard from "../components/AdminDashboard";
 import PortfolioGallery from "../components/PortfolioGallery";
+import {
+  fetchPortfolioItems,
+  fetchDistinctCategories,
+  incrementViews,
+  logDesignRequest,
+  buildWhatsappOrderMessage,
+} from "../services/portfolioService";
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
 import AnnouncementBar from "../components/AnnouncementBar";
@@ -140,6 +147,21 @@ const portfolioItems = [
   { cat: "website", img: IMG_LCDB_WEBSITE, name: "لا كاسا دي برجر — الموقع الرسمي", desc: "موقع كامل للمطعم يشمل المنيو التفاعلي بالصور وأزرار الطلب المباشر عبر واتساب — تصميم وتطوير كامل من الصفر.", tags: ["Web Design", "Restaurant", "UI/UX"], client: "لا كاسا دي برجر", link: "https://lacasa-de-burger-website.vercel.app/" },
   { cat: "brand", img: IMG_SCIB, name: "SCIB Paints — تصميم ترويجي", desc: "تصميم بوستر احترافي لمنتج دهانات يجمع بين الجودة البصرية والرسالة التسويقية الواضحة.", tags: ["Product Marketing", "Design", "Brand"], client: "SCIB Paints" },
 ];
+
+// أعمالي الأساسية (القديمة) بقت "احتياطية" — بتظهر بعد الأعمال الجديدة اللي
+// بترفعها من لوحة الأدمن، مش بدالها. بالشكل ده أعمالك الحقيقية القديمة
+// متتفقدش، وفي نفس الوقت أي بوست جديد من الأدمن بيظهر فوقها تلقائيًا.
+const LEGACY_CATEGORY_LABELS = { restaurant: "مطاعم وأكل", website: "مواقع الويب", brand: "هوية بصرية" };
+const legacyPortfolioItems = portfolioItems.map((p) => ({
+  id: `legacy-${p.name}`,
+  title: p.name,
+  short_description: p.desc,
+  main_image_url: p.img,
+  category: LEGACY_CATEGORY_LABELS[p.cat] || "عام",
+  client_name: p.client,
+  is_pinned: false,
+  legacyLink: p.link,
+}));
 
 const tips = [
   { num: "01", icon: "🎯", title: "اعرف جمهورك قبل أي خطوة", body: "قبل ما تبدأ أي حملة، لازم تعرف مين بالضبط بتخاطبه — العمر، الاهتمامات، المشاكل. المحتوى المخصص بيوصل أكتر من ميزانية إعلانية كاملة.", tag: "AUDIENCE FIRST" },
@@ -293,14 +315,40 @@ function ServicesSection({ setPage }) {
 
 function PortfolioSection() {
   const [filter, setFilter] = useState("all");
+  const [categories, setCategories] = useState([]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null);
-  const filters = [
-    { k: "all", label: "الكل" },
-    { k: "restaurant", label: "مطاعم وأكل" },
-    { k: "website", label: "مواقع الويب" },
-    { k: "brand", label: "هوية بصرية" },
-  ];
-  const visible = filter === "all" ? portfolioItems : portfolioItems.filter(p => p.cat === filter);
+  const WA_NUMBER = (WA_LINK.match(/wa\.me\/(\d+)/) || [])[1] || "201069032563";
+
+  // تحميل الأعمال المنشورة فعليًا من قاعدة البيانات (مرتّبة: المثبّت أولاً،
+  // بعدين الأحدث أولاً) — يعني أي بوست جديد بيرفعه الأدمن يظهر هنا فورًا
+  // من غير ما حد يحتاج يدوس "شاهد كل الأعمال".
+  useEffect(() => {
+    fetchDistinctCategories().then(setCategories).catch(() => {});
+    fetchPortfolioItems({ page: 1 })
+      .then((res) => setItems(res.items))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // الترتيب: أعمال الأدمن الجديدة (مثبّت فوق، بعدين الأحدث) أولاً،
+  // بعدين أعمالي الأساسية القديمة كـ "احتياطي" أسفل منها — مفيش حاجة بتضيع.
+  const combinedItems = [...items, ...legacyPortfolioItems];
+  const homepageItems = combinedItems.slice(0, 6);
+  const allCategories = Array.from(new Set([...categories, ...Object.values(LEGACY_CATEGORY_LABELS)]));
+  const visible = filter === "all" ? homepageItems : homepageItems.filter((p) => p.category === filter);
+
+  function openLightbox(item) {
+    setLightbox(item);
+    if (!String(item.id).startsWith("legacy-")) incrementViews(item.id);
+  }
+
+  function requestSimilar(item) {
+    if (!String(item.id).startsWith("legacy-")) logDesignRequest(item.id);
+    const pageUrl = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}#portfolio-gallery` : "";
+    return buildWhatsappOrderMessage(item, { whatsappNumber: WA_NUMBER, pageUrl });
+  }
 
   return (
     <section id="portfolio" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "#060606" }}>
@@ -309,62 +357,74 @@ function PortfolioSection() {
         <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>أعمالي الحقيقية</h2>
         <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">تصاميم ومحتوى نفّذته لعملاء حقيقيين في مجالات مختلفة</p>
       </Reveal>
-      <div className="flex flex-wrap justify-center gap-2 mb-12">
-        {filters.map(f => (
-          <button key={f.k} onClick={() => setFilter(f.k)} className="px-5 py-2 rounded-full text-xs font-bold tracking-wider border transition-all duration-200" style={{ background: filter === f.k ? "rgba(201,150,58,0.12)" : "transparent", borderColor: filter === f.k ? GOLD : "#2A2A2A", color: filter === f.k ? GOLD : "#666" }}>{f.label}</button>
-        ))}
-      </div>
+
+      {allCategories.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-2 mb-12">
+          <button onClick={() => setFilter("all")} className="px-5 py-2 rounded-full text-xs font-bold tracking-wider border transition-all duration-200" style={{ background: filter === "all" ? "rgba(201,150,58,0.12)" : "transparent", borderColor: filter === "all" ? GOLD : "#2A2A2A", color: filter === "all" ? GOLD : "#666" }}>الكل</button>
+          {allCategories.map((c) => (
+            <button key={c} onClick={() => setFilter(c)} className="px-5 py-2 rounded-full text-xs font-bold tracking-wider border transition-all duration-200" style={{ background: filter === c ? "rgba(201,150,58,0.12)" : "transparent", borderColor: filter === c ? GOLD : "#2A2A2A", color: filter === c ? GOLD : "#666" }}>{c}</button>
+          ))}
+        </div>
+      )}
+
+      {loading ? (
+        <p className="text-center text-sm" style={{ color: "#666" }}>جاري التحميل...</p>
+      ) : visible.length === 0 ? (
+        <p className="text-center text-sm" style={{ color: "#666" }}>لسه مفيش أعمال منشورة في التصنيف ده.</p>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
         {visible.map((item, i) => (
-          <Reveal key={i} delay={i * 45}>
-            <div onClick={() => setLightbox(item)} className="rounded-2xl border overflow-hidden cursor-pointer group transition-all duration-300 hover:-translate-y-2" style={{ background: "#161616", borderColor: "#2A2A2A" }}
+          <Reveal key={item.id} delay={i * 45}>
+            <div onClick={() => openLightbox(item)} className="rounded-2xl border overflow-hidden cursor-pointer group transition-all duration-300 hover:-translate-y-2" style={{ background: "#161616", borderColor: item.is_pinned ? "rgba(201,150,58,0.5)" : "#2A2A2A" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,150,58,0.35)"; e.currentTarget.style.boxShadow = "0 24px 70px rgba(0,0,0,0.6)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "#2A2A2A"; e.currentTarget.style.boxShadow = "none"; }}>
+              onMouseLeave={e => { e.currentTarget.style.borderColor = item.is_pinned ? "rgba(201,150,58,0.5)" : "#2A2A2A"; e.currentTarget.style.boxShadow = "none"; }}>
               <div className="relative h-52 overflow-hidden">
-                <img src={item.img} alt={item.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                {item.main_image_url && (
+                  <img src={item.main_image_url} alt={item.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                )}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl scale-50 group-hover:scale-100 transition-transform duration-300" style={{ background: GOLD }}>{item.link ? "🌐" : "👁️"}</div>
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl scale-50 group-hover:scale-100 transition-transform duration-300" style={{ background: GOLD }}>👁️</div>
                 </div>
-                <div className="absolute top-3 right-3 text-xs font-bold px-2 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.8)", color: GOLD, border: "1px solid rgba(201,150,58,0.3)" }}>
-                  {item.client}
-                </div>
-                {item.link && (
+                {item.client_name && (
+                  <div className="absolute top-3 right-3 text-xs font-bold px-2 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.8)", color: GOLD, border: "1px solid rgba(201,150,58,0.3)" }}>
+                    {item.client_name}
+                  </div>
+                )}
+                {item.is_pinned && (
                   <div className="absolute top-3 left-3 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1" style={{ background: "rgba(201,150,58,0.95)", color: "#000" }}>
-                    🔗 موقع حي
+                    📌 مثبّت
                   </div>
                 )}
               </div>
               <div className="p-5">
-                <div className="text-xs font-bold tracking-widest mb-1" style={{ color: GOLD }}>{item.cat.toUpperCase()}</div>
-                <h3 className="text-sm font-bold text-white mb-1">{item.name}</h3>
-                <p className="text-xs leading-relaxed mb-3" style={{ color: "#666" }}>{item.desc}</p>
-                <div className="flex flex-wrap gap-1">
-                  {item.tags.map((t, j) => (
-                    <span key={j} className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(201,150,58,0.07)", border: "1px solid rgba(201,150,58,0.2)", color: "#888" }}>{t}</span>
-                  ))}
-                </div>
+                <div className="text-xs font-bold tracking-widest mb-1" style={{ color: GOLD }}>{(item.category || "").toUpperCase()}</div>
+                <h3 className="text-sm font-bold text-white mb-1">{item.title}</h3>
+                <p className="text-xs leading-relaxed mb-3" style={{ color: "#666" }}>{item.short_description}</p>
               </div>
             </div>
           </Reveal>
         ))}
       </div>
+      )}
 
       {lightbox && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.95)" }} onClick={() => setLightbox(null)}>
           <div className="rounded-3xl overflow-hidden max-w-lg w-full relative" style={{ background: "#161616", border: "1px solid rgba(201,150,58,0.2)" }} onClick={e => e.stopPropagation()}>
             <button onClick={() => setLightbox(null)} className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full flex items-center justify-center text-lg" style={{ background: "rgba(0,0,0,0.7)", border: "1px solid rgba(201,150,58,0.3)", color: GOLD }}>✕</button>
-            <img src={lightbox.img} alt={lightbox.name} loading="lazy" className="w-full max-h-80 object-cover" />
+            {lightbox.main_image_url && (
+              <img src={lightbox.main_image_url} alt={lightbox.title} loading="lazy" className="w-full max-h-80 object-cover" />
+            )}
             <div className="p-6">
-              <div className="text-xs font-bold tracking-widest mb-1" style={{ color: GOLD }}>عميل: {lightbox.client}</div>
-              <h3 className="text-xl font-bold text-white mb-2">{lightbox.name}</h3>
-              <p className="text-sm leading-relaxed mb-4" style={{ color: "#888" }}>{lightbox.desc}</p>
+              {lightbox.client_name && <div className="text-xs font-bold tracking-widest mb-1" style={{ color: GOLD }}>عميل: {lightbox.client_name}</div>}
+              <h3 className="text-xl font-bold text-white mb-2">{lightbox.title}</h3>
+              <p className="text-sm leading-relaxed mb-4" style={{ color: "#888" }}>{lightbox.short_description}</p>
               <div className="flex flex-wrap gap-3">
-                {lightbox.link && (
-                  <a href={lightbox.link} target="_blank" rel="noreferrer" className="inline-block font-black px-6 py-3 rounded-xl text-sm" style={{ background: "rgba(201,150,58,0.1)", border: `1px solid ${GOLD}`, color: GOLD }}>
+                {lightbox.legacyLink && (
+                  <a href={lightbox.legacyLink} target="_blank" rel="noreferrer" className="inline-block font-black px-6 py-3 rounded-xl text-sm" style={{ background: "rgba(201,150,58,0.1)", border: `1px solid ${GOLD}`, color: GOLD }}>
                     🌐 زيارة الموقع
                   </a>
                 )}
-                <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-6 py-3 rounded-xl text-black text-sm" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})` }}>
+                <a href={requestSimilar(lightbox)} target="_blank" rel="noreferrer" className="inline-block font-black px-6 py-3 rounded-xl text-black text-sm" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})` }}>
                   💬 اطلب تصميم مشابه
                 </a>
               </div>
