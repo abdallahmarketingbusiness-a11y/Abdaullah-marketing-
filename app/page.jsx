@@ -9,6 +9,8 @@ import AdminLogin from "../components/AdminLogin";
 import AdminDashboard from "../components/AdminDashboard";
 import PortfolioGallery from "../components/PortfolioGallery";
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
+import { fetchVisibleTestimonials } from "../services/testimonialsService";
+import AnnouncementBar from "../components/AnnouncementBar";
 
 const GOLD = "#C9963A";
 const GOLD2 = "#E8BE6A";
@@ -1582,6 +1584,14 @@ function TestimonialsSection() {
 
 function AboutPage({ setPage }) {
   const [cvOpen, setCvOpen] = useState(false);
+  const [testimonialsList, setTestimonialsList] = useState([]);
+
+  useEffect(() => {
+    fetchVisibleTestimonials()
+      .then(setTestimonialsList)
+      .catch(() => setTestimonialsList([]));
+  }, []);
+
   const details = [
     { icon: "📍", label: "LOCATION", value: "أسيوط، مصر" },
     { icon: "🎯", label: "SPECIALTY", value: "Social Media Marketing" },
@@ -1674,26 +1684,36 @@ function AboutPage({ setPage }) {
           <div className="mb-3 text-xs font-bold tracking-widest text-center" style={{ color: GOLD }}>✦ الشهادات</div>
           <h3 className="text-2xl font-black text-white text-center mb-10" style={{ fontFamily: "'Cinzel', serif" }}>شهادات معتمدة</h3>
         </Reveal>
-        <Reveal>
-          <div className="rounded-2xl p-6 md:p-8 border mb-12 grid grid-cols-1 md:grid-cols-2 gap-6 items-center" style={{ background: "#0E0E0E", borderColor: "#2A2A2A" }}>
-            <img
-              src="/certificate.jpg"
-              alt="شهادة إنشاء المواقع الإلكترونية"
-              loading="lazy"
-              className="w-full rounded-xl border"
-              style={{ borderColor: "rgba(201,150,58,0.25)" }}
-            />
-            <div>
-              <strong className="block text-white font-bold text-base mb-2">شهادة حضور دورة "إنشاء المواقع الإلكترونية"</strong>
-              <p className="text-sm leading-loose mb-3" style={{ color: "#999" }}>
-                معتمدة من <strong className="text-white">مركز التطوير التكنولوجي — مديرية التربية والتعليم بأسيوط</strong>، ضمن برنامج التدريب الإلكتروني (Online Courses).
-              </p>
-              <div className="flex items-center gap-2 text-xs font-bold" style={{ color: GOLD }}>
-                <span>🏛️</span> جهة معتمدة من وزارة التربية والتعليم
+        {testimonialsList.map((t) => (
+          <Reveal key={t.id}>
+            <div className="rounded-2xl p-6 md:p-8 border mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-center" style={{ background: "#0E0E0E", borderColor: "#2A2A2A" }}>
+              {t.image_url && (
+                <img
+                  src={t.image_url}
+                  alt={t.certificate_name}
+                  loading="lazy"
+                  className="w-full rounded-xl border"
+                  style={{ borderColor: "rgba(201,150,58,0.25)" }}
+                />
+              )}
+              <div>
+                <strong className="block text-white font-bold text-base mb-2">{t.certificate_name}</strong>
+                {t.description && (
+                  <p className="text-sm leading-loose mb-3" style={{ color: "#999" }}>{t.description}</p>
+                )}
+                <div className="flex items-center gap-2 text-xs font-bold" style={{ color: GOLD }}>
+                  <span>🏛️</span> {t.issuer}
+                </div>
+                {t.verify_url && (
+                  <a href={t.verify_url} target="_blank" rel="noreferrer" className="inline-block mt-3 text-xs font-bold underline" style={{ color: GOLD3 }}>
+                    🔗 التحقق من الشهادة
+                  </a>
+                )}
               </div>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+        ))}
+        <div className="mb-6" />
 
         <div className="text-center">
           <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
@@ -1973,6 +1993,7 @@ export default function App() {
         .animate-spin-slow { animation: spin-slow 20s linear infinite; }
       `}</style>
       <WAButton />
+      {page !== "admin" && <AnnouncementBar />}
       <Navbar page={page} setPage={setPage} />
       {page === "home" && (
         <>

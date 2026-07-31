@@ -1,6 +1,6 @@
 // src/services/aboutService.js
 import { supabase } from "../lib/supabaseClient";
-import { ABOUT_TABLE, SETTINGS_TABLE, STORAGE_BUCKETS } from "../config/portfolioConfig";
+import { ABOUT_TABLE, SETTINGS_TABLE, STORAGE_BUCKETS, ANNOUNCEMENTS_TABLE } from "../config/portfolioConfig";
 import { logActivity } from "./activityLogService";
 
 // ---------------------------------------------------------------------------
@@ -94,4 +94,25 @@ export async function fetchDashboardStats() {
     topViewed: topViewed || [],
     topRequested: topRequested || [],
   };
+}
+
+// ---------------------------------------------------------------------------
+// الإشعار العلوي (Announcement Bar) — صف واحد بس (id = 1)
+// ---------------------------------------------------------------------------
+export async function fetchAnnouncement() {
+  const { data, error } = await supabase.from(ANNOUNCEMENTS_TABLE).select("*").eq("id", 1).single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateAnnouncement(payload) {
+  const { data, error } = await supabase
+    .from(ANNOUNCEMENTS_TABLE)
+    .update({ ...payload, updated_at: new Date().toISOString() })
+    .eq("id", 1)
+    .select()
+    .single();
+  if (error) throw error;
+  await logActivity({ action: "update", entityType: "announcements" });
+  return data;
 }

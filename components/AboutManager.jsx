@@ -4,6 +4,7 @@ import { GOLD, GOLD2, GOLD3, FONT } from "../config/theme";
 import {
   fetchAboutPage, updateAboutPage, uploadAboutImage,
   fetchSiteSettings, updateSiteSettings, uploadSiteLogo,
+  fetchAnnouncement, updateAnnouncement,
 } from "../services/aboutService";
 import ImageDropzone from "./ImageDropzone";
 import Toast from "./Toast";
@@ -229,6 +230,85 @@ function SettingsTab({ flash }) {
   );
 }
 
+function AnnouncementTab({ flash }) {
+  const [form, setForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchAnnouncement().then(setForm);
+  }, []);
+
+  if (!form) return <p style={{ color: "#888" }}>جاري التحميل...</p>;
+
+  function update(field, value) {
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const updated = await updateAnnouncement({
+        is_active: form.is_active,
+        message: form.message,
+        link_url: form.link_url,
+        link_label: form.link_label,
+      });
+      setForm(updated);
+      flash("✅ تم حفظ الإعلان");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, background: "rgba(255,255,255,0.03)", padding: "10px 14px", borderRadius: 10 }}>
+        <input
+          type="checkbox"
+          checked={form.is_active}
+          onChange={(e) => update("is_active", e.target.checked)}
+          style={{ width: 18, height: 18, cursor: "pointer" }}
+        />
+        <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>
+          {form.is_active ? "🟢 الإعلان ظاهر للزوار دلوقتي" : "⚪ الإعلان متوقف — مش ظاهر للزوار"}
+        </span>
+      </div>
+
+      <label style={labelStyle}>نص الإعلان / العرض</label>
+      <textarea
+        rows={3}
+        style={{ ...fieldStyle, resize: "vertical" }}
+        placeholder="مثال: خصم 20% على تصميم الهوية البصرية لفترة محدودة 🎉"
+        value={form.message}
+        onChange={(e) => update("message", e.target.value)}
+      />
+
+      <label style={labelStyle}>رابط (اختياري)</label>
+      <input
+        style={fieldStyle}
+        placeholder="https://wa.me/20..."
+        value={form.link_url || ""}
+        onChange={(e) => update("link_url", e.target.value)}
+      />
+
+      <label style={labelStyle}>نص الرابط (اختياري)</label>
+      <input
+        style={fieldStyle}
+        placeholder="اطلب العرض الآن"
+        value={form.link_label || ""}
+        onChange={(e) => update("link_label", e.target.value)}
+      />
+
+      <p style={{ color: "#666", fontSize: 11.5, marginBottom: 14, lineHeight: 1.8 }}>
+        💡 الإعلان بيظهر كشريط فوق الموقع، وبيختفي تلقائيًا بعد دقيقتين لو الزائر ماقفلوش بنفسه.
+        لو عايز تلغيه فورًا لكل الزوار، شيل علامة "الإعلان ظاهر" من فوق واحفظ.
+      </p>
+
+      <SaveButton saving={saving} onClick={handleSave} />
+    </div>
+  );
+}
+
 export default function AboutManager() {
   const [tab, setTab] = useState("about");
   const [toastMsg, setToastMsg] = useState("");
@@ -244,6 +324,7 @@ export default function AboutManager() {
         {[
           { id: "about", label: "👤 من نحن" },
           { id: "settings", label: "⚙️ إعدادات الموقع" },
+          { id: "announcement", label: "📣 العروض والإشعارات" },
         ].map((t) => (
           <button
             key={t.id}
@@ -261,7 +342,9 @@ export default function AboutManager() {
       </div>
 
       <div style={{ maxWidth: 560 }}>
-        {tab === "about" ? <AboutTab flash={flash} /> : <SettingsTab flash={flash} />}
+        {tab === "about" && <AboutTab flash={flash} />}
+        {tab === "settings" && <SettingsTab flash={flash} />}
+        {tab === "announcement" && <AnnouncementTab flash={flash} />}
       </div>
 
       {toastMsg && <Toast toast={{ type: "success", text: toastMsg }} onClose={() => setToastMsg("")} />}

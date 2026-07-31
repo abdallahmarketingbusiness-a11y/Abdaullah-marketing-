@@ -10,6 +10,7 @@ export const ABOUT_TABLE = "about_page";
 export const SETTINGS_TABLE = "site_settings";
 export const ACTIVITY_LOG_TABLE = "activity_log";
 export const DESIGN_REQUESTS_TABLE = "design_requests";
+export const ANNOUNCEMENTS_TABLE = "announcements";
 
 export const PORTFOLIO_STATUS = {
   PUBLISHED: "published",

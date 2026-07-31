@@ -38,8 +38,7 @@ export async function fetchPortfolioItems({
   }
 
   query = query
-    .order("is_featured", { ascending: false })
-    .order("sort_order", { ascending: true })
+    .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -142,7 +141,7 @@ export async function fetchAllPortfolioItemsForAdmin({ search = "", category = "
     query = query.eq("category", category);
   }
 
-  query = query.order("sort_order", { ascending: true }).order("created_at", { ascending: false });
+  query = query.order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
 
   const { data, error } = await query;
   if (error) throw error;
@@ -192,6 +191,28 @@ export async function setPortfolioFeatured(id, isFeatured) {
     .select()
     .single();
   if (error) throw error;
+  return data;
+}
+
+// تثبيت منشور: بيلغي تثبيت أي منشور تاني تلقائيًا (منشور واحد ثابت بس في كل مرة)
+export async function setPortfolioPinned(id, isPinned) {
+  if (isPinned) {
+    const { error: unpinError } = await supabase
+      .from(PORTFOLIO_TABLE)
+      .update({ is_pinned: false })
+      .neq("id", id)
+      .eq("is_pinned", true);
+    if (unpinError) throw unpinError;
+  }
+
+  const { data, error } = await supabase
+    .from(PORTFOLIO_TABLE)
+    .update({ is_pinned: isPinned, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  await logActivity({ action: isPinned ? "pin" : "unpin", entityType: "portfolio_items", entityId: id, details: { title: data.title } });
   return data;
 }
 

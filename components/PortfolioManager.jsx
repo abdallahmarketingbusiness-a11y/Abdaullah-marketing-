@@ -9,6 +9,7 @@ import {
   deletePortfolioItem,
   setPortfolioStatus,
   setPortfolioFeatured,
+  setPortfolioPinned,
   reorderPortfolioItems,
   duplicatePortfolioItem,
   bulkDeletePortfolioItems,
@@ -391,6 +392,13 @@ export default function PortfolioManager() {
     setItems((list) => list.map((p) => (p.id === item.id ? updated : p)));
   }
 
+  // التثبيت بيأثر على منشور تاني كمان (بيتلغي تثبيته تلقائي)، فبنعيد تحميل القائمة كاملة
+  async function handleTogglePinned(item) {
+    await setPortfolioPinned(item.id, !item.is_pinned);
+    flash(item.is_pinned ? "📌 تم إلغاء التثبيت" : "📌 تم تثبيت المنشور في الأول");
+    await load();
+  }
+
   async function handleDuplicate(item) {
     const copy = await duplicatePortfolioItem(item.id);
     setItems((list) => [copy, ...list]);
@@ -459,7 +467,7 @@ export default function PortfolioManager() {
               onDrop={() => handleDrop(idx)}
               style={{
                 borderRadius: 16,
-                border: `1px solid ${item.is_featured ? "rgba(201,150,58,0.5)" : "rgba(255,255,255,0.08)"}`,
+                border: `1px solid ${item.is_pinned ? GOLD : item.is_featured ? "rgba(201,150,58,0.5)" : "rgba(255,255,255,0.08)"}`,
                 background: "rgba(255,255,255,0.02)",
                 padding: 14,
                 opacity: item.status === PORTFOLIO_STATUS.HIDDEN ? 0.55 : 1,
@@ -478,6 +486,7 @@ export default function PortfolioManager() {
                   </div>
                   <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.category}{item.client_name ? ` · ${item.client_name}` : ""}</p>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {item.is_pinned && <span style={badgeStyle(GOLD)}>📌 مثبّت</span>}
                     {isNew(item.created_at) && <span style={badgeStyle("#3fa9f5")}>جديد</span>}
                     {item.is_featured && <span style={badgeStyle(GOLD)}>مميز</span>}
                     <span style={badgeStyle("#666")}>👁️ {item.views_count || 0}</span>
@@ -490,6 +499,7 @@ export default function PortfolioManager() {
                 <ActionBtn onClick={() => setEditing(item)}>✏️ تعديل</ActionBtn>
                 <ActionBtn onClick={() => handleDuplicate(item)}>📄 نسخ</ActionBtn>
                 <ActionBtn onClick={() => handleToggleFeatured(item)}>⭐ {item.is_featured ? "إلغاء التمييز" : "تمييز"}</ActionBtn>
+                <ActionBtn onClick={() => handleTogglePinned(item)}>📌 {item.is_pinned ? "إلغاء التثبيت" : "تثبيت"}</ActionBtn>
                 <ActionBtn onClick={() => handleToggleVisibility(item)}>👁️ {item.status === PORTFOLIO_STATUS.HIDDEN ? "إظهار" : "إخفاء"}</ActionBtn>
                 <ActionBtn danger onClick={() => handleDelete(item)}>🗑️ حذف</ActionBtn>
               </div>
