@@ -28,6 +28,8 @@ export default function TestimonialsSection() {
               <img
                 src={t.image_url}
                 alt={t.certificate_name}
+                loading="lazy"
+                decoding="async"
                 onClick={() => setZoomed(t)}
                 style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 10, marginBottom: 10, cursor: "zoom-in" }}
               />
