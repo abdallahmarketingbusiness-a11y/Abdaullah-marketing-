@@ -1,7 +1,7 @@
 // src/pages/AdminLogin.jsx
 import { useState } from "react";
 import { GOLD, GOLD2, BG, FONT } from "../config/theme";
-import { signInAdmin } from "../services/authService";
+import { signInAdmin, signOutAdmin, isCurrentUserAdmin } from "../services/authService";
 
 export default function AdminLogin({ onSuccess }) {
   const [email, setEmail] = useState("");
@@ -14,7 +14,17 @@ export default function AdminLogin({ onSuccess }) {
     setError("");
     setLoading(true);
     try {
+      // signInAdmin بيتحقق بس إن الإيميل/الباسورد صح في Supabase Auth —
+      // ده بينجح مع أي حساب متسجل (حتى حساب عميل عادي)، مش بس حسابات الأدمن.
+      // لازم نتأكد كمان إن اليوزر ده موجود فعليًا في جدول admins قبل ما نديله دخول للوحة التحكم،
+      // وإلا أي عميل هيقدر يدخل هنا بحساب العميل بتاعه.
       await signInAdmin(email, password);
+      const isAdmin = await isCurrentUserAdmin();
+      if (!isAdmin) {
+        await signOutAdmin();
+        setError("الحساب ده مش حساب أدمن. الصفحة دي مخصصة لإدارة الباقات فقط.");
+        return;
+      }
       onSuccess();
     } catch (err) {
       setError("بيانات الدخول غير صحيحة أو الحساب غير مفعّل.");

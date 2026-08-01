@@ -195,13 +195,7 @@ const steps = [
 
 function Particles() {
   return (
-    // top starts just below the fixed navbar (~76px) instead of the very top (inset-0).
-    // The particles were animating nonstop directly behind the blurred glass navbar,
-    // forcing the browser to recompute that blur across the full tab width on every
-    // single animation frame — the wider the window, the heavier that cost. Keeping
-    // this small strip particle-free removes that continuous cost with zero visible
-    // difference (it was hidden behind the frosted glass anyway).
-    <div className="absolute left-0 right-0 bottom-0 overflow-hidden pointer-events-none" style={{ top: 76 }}>
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {Array.from({ length: 18 }).map((_, i) => (
         <div key={i} className="absolute rounded-full" style={{ width: 1.5 + (i % 3) * 0.7, height: 1.5 + (i % 3) * 0.7, left: `${(i * 17 + 7) % 100}%`, background: GOLD, animation: `floatUp ${10 + (i % 6) * 2}s linear ${(i * 1.3) % 8}s infinite`, opacity: 0 }} />
       ))}
