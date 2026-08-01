@@ -2089,9 +2089,8 @@ export default function App() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Cinzel:wght@700;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Cairo', sans-serif; background: #060606; overflow-x: hidden; }
+        body { font-family: Cairo, sans-serif; background: #060606; overflow-x: hidden; }
         @keyframes floatUp { 0% { opacity:0; transform:translateY(100vh); } 10% { opacity:0.6; } 90% { opacity:0.2; } 100% { opacity:0; transform:translateY(-20px); } }
         @keyframes fadeDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }

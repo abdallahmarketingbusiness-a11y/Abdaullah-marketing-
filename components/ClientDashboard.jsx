@@ -283,7 +283,7 @@ export default function ClientDashboard({ onLogout }) {
               {loading ? (
                 <SectionLoading />
               ) : (
-                activeMeta.render({ profile, email, refreshProfile: loadProfile, notify })
+                <activeMeta.render profile={profile} email={email} refreshProfile={loadProfile} notify={notify} />
               )}
             </div>
           </main>
