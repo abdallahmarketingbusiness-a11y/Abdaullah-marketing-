@@ -28,6 +28,7 @@ export const STORAGE_BUCKETS = {
   ABOUT: "about",
   SITE: "site",
   PORTFOLIO_SOURCES: "portfolio-sources",
+  CLIENT_FILES: "client-files",
 };
 
 export const PORTFOLIO_GALLERY = {
