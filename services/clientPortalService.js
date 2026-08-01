@@ -10,6 +10,8 @@
 // 1) استبدل الـ mock array/object بنداء supabase.from("اسم_الجدول").select(...).eq("client_id", clientId)
 // 2) سيب توقيع الدالة (الاسم والمخرجات) زي ما هو عشان الواجهة تفضل شغالة من غير تعديل.
 
+import { fetchPublishedAnalyticsForCurrentClient } from "./analyticsService";
+
 function delay(data, ms = 250) {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms));
 }
@@ -57,20 +59,12 @@ export async function getHomeSummary() {
 }
 
 // ----------------------------------------------------------------------------
-// التحليلات — جدول مقترح مستقبلًا: analytics_snapshots
+// التحليلات — جدول حقيقي: client_analytics (sql/migration_analytics.sql)
+// بيتم إدخالها من لوحة السوبر أدمن (تبويب "تحليلات العملاء") وتظهر هنا للعميل
+// اللي التقارير منشورة (status = published) بتاعته بس.
 // ----------------------------------------------------------------------------
 export async function getAnalytics() {
-  return delay({
-    totals: { reach: 128000, impressions: 312000, visits: 9400, followers: 15600 },
-    monthly: [
-      { label: "مارس", value: 62 },
-      { label: "أبريل", value: 70 },
-      { label: "مايو", value: 58 },
-      { label: "يونيو", value: 81 },
-      { label: "يوليو", value: 94 },
-      { label: "أغسطس", value: 88 },
-    ],
-  });
+  return fetchPublishedAnalyticsForCurrentClient();
 }
 
 // ----------------------------------------------------------------------------

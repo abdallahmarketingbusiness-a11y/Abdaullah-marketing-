@@ -33,6 +33,7 @@ import {
   getNotifications,
 } from "../services/clientPortalService";
 import Toast from "./Toast";
+import { AnalyticsTrendChart, PostsCompareList, InsightList } from "./AnalyticsCharts";
 
 // ============================================================================
 // إعدادات وعناصر عامة
@@ -393,34 +394,50 @@ function AnalyticsSection() {
   }, []);
 
   if (!data) return <SectionLoading />;
-  const maxVal = Math.max(...data.monthly.map((m) => m.value));
+  if (!data.hasData) {
+    return <EmptyState text="لسه مفيش تقرير تحليلات متاح لحسابك. هيظهر هنا أول ما فريقنا يجهّزه." />;
+  }
+
+  const { latest, trend, bestPosts, worstPosts, strengths, weaknesses, suggestions } = data;
 
   return (
-    <div>
-      <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 12, marginBottom: 24 }}>
-        <MiniStatCard icon="👁️" label="الوصول" value={data.totals.reach.toLocaleString("en-US")} />
-        <MiniStatCard icon="📈" label="مرات الظهور" value={data.totals.impressions.toLocaleString("en-US")} />
-        <MiniStatCard icon="🌐" label="الزيارات" value={data.totals.visits.toLocaleString("en-US")} />
-        <MiniStatCard icon="👥" label="المتابعين" value={data.totals.followers.toLocaleString("en-US")} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+      <div>
+        <p style={{ color: "#888", fontSize: 12, marginBottom: 12 }}>آخر تحديث: {latest.periodLabel}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 12 }}>
+          <MiniStatCard icon="👁️" label="الوصول" value={latest.reach.toLocaleString("en-US")} />
+          <MiniStatCard icon="💬" label="نسبة التفاعل" value={`${latest.engagementRate}%`} />
+          <MiniStatCard icon="👥" label="المتابعين" value={latest.followersCount.toLocaleString("en-US")} />
+          <MiniStatCard icon="🌐" label="زيارات الحساب" value={latest.profileVisits.toLocaleString("en-US")} />
+        </div>
+        {typeof latest.followersGrowth === "number" && (
+          <p style={{ color: latest.followersGrowth >= 0 ? "#4ade80" : "#ff8080", fontSize: 12, fontWeight: 700, marginTop: 10 }}>
+            {latest.followersGrowth >= 0 ? "▲" : "▼"} {Math.abs(latest.followersGrowth).toLocaleString("en-US")} متابع هذا الشهر
+          </p>
+        )}
       </div>
 
-      <h4 style={{ color: GOLD3, fontWeight: 800, fontSize: 13.5, marginBottom: 14 }}>الأداء الشهري (نسبة إلى أعلى شهر)</h4>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 160, padding: "0 4px" }}>
-        {data.monthly.map((m) => (
-          <div key={m.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, height: "100%", justifyContent: "flex-end" }}>
-            <span style={{ color: GOLD2, fontSize: 11, fontWeight: 800 }}>{m.value}</span>
-            <div
-              style={{
-                width: "100%", maxWidth: 34,
-                height: `${(m.value / maxVal) * 100}%`,
-                minHeight: 6, borderRadius: 8,
-                background: `linear-gradient(180deg,${GOLD2},${GOLD})`,
-              }}
-            />
-            <span style={{ color: "#888", fontSize: 11 }}>{m.label}</span>
-          </div>
-        ))}
-      </div>
+      {trend.length > 1 && (
+        <div>
+          <h4 style={{ color: GOLD3, fontWeight: 800, fontSize: 13.5, marginBottom: 14 }}>الأداء عبر الوقت</h4>
+          <AnalyticsTrendChart trend={trend} />
+        </div>
+      )}
+
+      {(bestPosts.length > 0 || worstPosts.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 20 }}>
+          <PostsCompareList title="أفضل المنشورات" icon="🏆" items={bestPosts} tone="good" />
+          <PostsCompareList title="أسوأ المنشورات" icon="📉" items={worstPosts} tone="bad" />
+        </div>
+      )}
+
+      {(strengths.length > 0 || weaknesses.length > 0 || suggestions.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 20 }}>
+          <InsightList title="نقاط القوة" icon="💪" items={strengths} color="#4ade80" />
+          <InsightList title="نقاط الضعف" icon="⚠️" items={weaknesses} color="#facc15" />
+          <InsightList title="اقتراحات الشهر القادم" icon="💡" items={suggestions} color={GOLD2} />
+        </div>
+      )}
     </div>
   );
 }

@@ -69,6 +69,20 @@ export async function updateClientProfile({ fullName, phone, businessName }) {
   return data;
 }
 
+// قائمة كل العملاء — للأدمن بس (RLS: clients_select_admin في migration_analytics.sql).
+// بتُستخدم في لوحة "تحليلات العملاء" عشان الأدمن يختار العميل اللي هيضيفله تقرير.
+export async function fetchAllClientsForAdmin({ search = "" } = {}) {
+  let query = supabase.from("clients").select("*");
+  if (search && search.trim()) {
+    const term = search.trim();
+    query = query.or(`full_name.ilike.%${term}%,business_name.ilike.%${term}%,phone.ilike.%${term}%`);
+  }
+  query = query.order("full_name", { ascending: true });
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
 // إرسال رابط إعادة تعيين كلمة المرور بالإيميل.
 // لازم يكون #reset-password مضاف في Supabase → Authentication → URL Configuration → Redirect URLs
 export async function requestPasswordReset(email) {
