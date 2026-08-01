@@ -4,4 +4,4 @@ export const GOLD = "#C9963A";
 export const GOLD2 = "#E8BE6A";
 export const GOLD3 = "#F5D78E";
 export const BG = "#060606";
-export const FONT = "'Cairo', sans-serif";
+export const FONT = "var(--font-cairo), sans-serif";

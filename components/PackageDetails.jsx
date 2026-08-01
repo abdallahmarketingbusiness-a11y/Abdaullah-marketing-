@@ -95,7 +95,7 @@ export default function PackageDetails({ packageId, onUseAsNew, onBack }) {
 
             <div style={{ borderTop: "1px solid rgba(201,150,58,0.2)", marginTop: 16, paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <span style={{ color: "#999", fontSize: 13, fontWeight: 700 }}>السعر النهائي</span>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 900, color: GOLD3 }}>
+              <span style={{ fontFamily: "var(--font-cinzel), serif", fontSize: 26, fontWeight: 900, color: GOLD3 }}>
                 {(pkg.final_price || 0).toLocaleString()} <span style={{ fontSize: 12, color: "#999" }}>ج.م</span>
               </span>
             </div>

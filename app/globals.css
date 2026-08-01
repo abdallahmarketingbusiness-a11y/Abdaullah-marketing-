@@ -66,7 +66,7 @@ html {
 }
 
 body {
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--font-cairo), sans-serif;
   background: var(--glow-bg);
   background-color: var(--bg);
   background-attachment: fixed;
@@ -202,7 +202,7 @@ html.light .glass-panel {
 }
 
 .section-eyebrow {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-cinzel), serif;
   letter-spacing: 0.25em;
   font-size: 0.7rem;
   font-weight: 700;

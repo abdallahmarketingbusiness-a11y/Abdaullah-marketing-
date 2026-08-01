@@ -252,7 +252,7 @@ export default function SubscribeModal({ pkg, initialCoupon = "", onClose, onSub
               {discount > 0 && <Row label="الخصم" value={`- ${discount.toLocaleString()} ج.م`} valueColor="#4ade80" />}
               <div style={{ borderTop: "1px solid rgba(201,150,58,0.2)", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ color: "#999", fontSize: 13, fontWeight: 700 }}>الإجمالي</span>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 900, color: GOLD3 }}>{finalPrice.toLocaleString()} ج.م</span>
+                <span style={{ fontFamily: "var(--font-cinzel), serif", fontSize: 20, fontWeight: 900, color: GOLD3 }}>{finalPrice.toLocaleString()} ج.م</span>
               </div>
             </div>
 

@@ -37,7 +37,7 @@ function PackageCard({ pkg, onOpen }) {
   return (
     <div
       onClick={() => onOpen(pkg.id)}
-      className="transition-all duration-300 hover:-translate-y-1"
+      className="transition duration-300 hover:-translate-y-1"
       style={{
         cursor: "pointer",
         position: "relative",
@@ -89,7 +89,7 @@ function PackageCard({ pkg, onOpen }) {
         }}
       >
         <span style={{ color: "#777", fontSize: 12 }}>السعر النهائي</span>
-        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 900, color: GOLD3 }}>
+        <span style={{ fontFamily: "var(--font-cinzel), serif", fontSize: 20, fontWeight: 900, color: GOLD3 }}>
           {(pkg.final_price || 0).toLocaleString()} <span style={{ fontSize: 11, color: "#999" }}>ج.م</span>
         </span>
       </div>

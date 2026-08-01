@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compress: true,
+  images: {
+    // بيسمح لـ next/image إنه يتعامل مع الصور المرفوعة على Supabase Storage
+    // (مش بس الصور المحلية في /public) عشان يقدر يصغّرها ويحوّلها WebP/AVIF أوتوماتيك.
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.supabase.co' },
+    ],
+    formats: ['image/avif', 'image/webp'],
+  },
   async headers() {
     return [
       {

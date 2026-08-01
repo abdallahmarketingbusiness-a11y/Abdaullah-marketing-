@@ -33,7 +33,7 @@ export default function ThemeToggle({ className = "" }) {
       onClick={toggle}
       aria-label={isLight ? "التبديل للوضع الليلي" : "التبديل للوضع النهاري"}
       title={isLight ? "الوضع الليلي" : "الوضع النهاري"}
-      className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 ${className}`}
+      className={`relative flex items-center justify-center w-9 h-9 rounded-full transition duration-300 ${className}`}
       style={{
         background: "rgba(201,150,58,0.1)",
         border: "1px solid rgba(201,150,58,0.25)",

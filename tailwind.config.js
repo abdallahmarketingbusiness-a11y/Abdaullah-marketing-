@@ -9,8 +9,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        cairo: ["'Cairo'", "sans-serif"],
-        cinzel: ["'Cinzel'", "serif"],
+        cairo: ["var(--font-cairo)", "sans-serif"],
+        cinzel: ["var(--font-cinzel)", "serif"],
       },
       colors: {
         gold: {

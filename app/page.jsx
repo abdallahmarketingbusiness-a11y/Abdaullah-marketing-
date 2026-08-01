@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { createPackage } from "../services/packagesService";
 import Toast from "../components/Toast";
 import PackagesGallery from "../components/PackagesGallery";
@@ -231,9 +232,12 @@ function LogoSVG({ size = 110 }) {
         animation: "logoPulse 2.8s ease-in-out infinite 0.4s",
         pointerEvents: "none",
       }} />
-      <img
+      <Image
         src={IMG_LOGO}
         alt="Abdullah Marketing Logo"
+        width={size}
+        height={Math.round(size * 0.72)}
+        priority
         style={{
           width: size,
           height: size * 0.72,
@@ -260,23 +264,23 @@ function HeroPage({ setPage }) {
       <div className="mb-7" style={{ animation: "scaleIn 1s cubic-bezier(.16,1,.3,1) forwards" }}>
         <LogoSVG size={160} />
       </div>
-      <h1 className="font-black tracking-widest leading-none mb-2" style={{ fontFamily: "'Cinzel', serif", fontSize: "clamp(40px,8vw,80px)", background: `linear-gradient(135deg, ${GOLD}, ${GOLD3}, ${GOLD})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "fadeUp .9s .15s ease both" }}>
+      <h1 className="font-black tracking-widest leading-none mb-2" style={{ fontFamily: "var(--font-cinzel), serif", fontSize: "clamp(40px,8vw,80px)", background: `linear-gradient(135deg, ${GOLD}, ${GOLD3}, ${GOLD})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "fadeUp .9s .15s ease both" }}>
         ABDULLAH
       </h1>
-      <h2 className="tracking-widest mb-8 font-bold" style={{ fontFamily: "'Cinzel', serif", fontSize: "clamp(12px,2vw,17px)", color: "#666", letterSpacing: 10, animation: "fadeUp .9s .25s ease both" }}>
+      <h2 className="tracking-widest mb-8 font-bold" style={{ fontFamily: "var(--font-cinzel), serif", fontSize: "clamp(12px,2vw,17px)", color: "#666", letterSpacing: 10, animation: "fadeUp .9s .25s ease both" }}>
         MARKETING
       </h2>
       <p className="text-base leading-relaxed max-w-lg mx-auto mb-10" style={{ color: "#999", animation: "fadeUp .9s .35s ease both" }}>
         نحوّل حضورك الرقمي إلى محرك نمو حقيقي — محتوى احترافي، إدارة ذكية، ونتائج تُقاس بالأرقام
       </p>
       <div className="flex gap-3 flex-wrap justify-center mb-16" style={{ animation: "fadeUp .9s .45s ease both" }}>
-        <a href={WA_LINK} target="_blank" rel="noreferrer" className="font-black px-8 py-3 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+        <a href={WA_LINK} target="_blank" rel="noreferrer" className="font-black px-8 py-3 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
           🚀 ابدأ رحلتك معنا
         </a>
-        <button onClick={() => { setPage("home"); setTimeout(() => { const el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }, 80); }} className="font-bold px-8 py-3 rounded-xl text-sm transition-all duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
+        <button onClick={() => { setPage("home"); setTimeout(() => { const el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }, 80); }} className="font-bold px-8 py-3 rounded-xl text-sm transition duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
           📦 الباقات
         </button>
-        <button onClick={() => setPage("gallery")} className="font-bold px-8 py-3 rounded-xl text-sm transition-all duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
+        <button onClick={() => setPage("gallery")} className="font-bold px-8 py-3 rounded-xl text-sm transition duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
           📁 الباقات المخصصة
         </button>
       </div>
@@ -288,7 +292,7 @@ function HeroPage({ setPage }) {
           { num: "24/7", label: "دعم مستمر" },
         ].map((s, i) => (
           <div key={i} className="flex-1 py-5 px-6 text-center" style={{ borderLeft: i < 3 ? "1px solid #2A2A2A" : "none", minWidth: 120 }}>
-            <span className="block text-2xl font-black mb-1" style={{ fontFamily: "'Cinzel', serif", color: GOLD }}>{s.num}</span>
+            <span className="block text-2xl font-black mb-1" style={{ fontFamily: "var(--font-cinzel), serif", color: GOLD }}>{s.num}</span>
             <span className="text-xs tracking-wider font-semibold" style={{ color: "#666" }}>{s.label}</span>
           </div>
         ))}
@@ -302,7 +306,7 @@ function ServicesSection({ setPage }) {
     <section id="services" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
         <SectionLabel>OUR SERVICES</SectionLabel>
-        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>خدماتنا الاحترافية</h2>
+        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>خدماتنا الاحترافية</h2>
         <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">حلول متكاملة تحوّل علامتك التجارية إلى قوة رقمية لا تُنافَس</p>
       </Reveal>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
@@ -310,7 +314,7 @@ function ServicesSection({ setPage }) {
           <Reveal key={i} delay={i * 45}>
             <div className="card-pro p-8 relative overflow-hidden group cursor-default">
               <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-5 transition-all duration-300 group-hover:scale-110" style={{ background: "rgba(201,150,58,0.08)", border: "1px solid rgba(201,150,58,0.2)" }}>{s.icon}</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-5 transition duration-300 group-hover:scale-110" style={{ background: "rgba(201,150,58,0.08)", border: "1px solid rgba(201,150,58,0.2)" }}>{s.icon}</div>
               <h3 className="text-base font-bold mb-2" style={{ color: "var(--text-primary)" }}>{s.name}</h3>
               <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{s.desc}</p>
               <span className="badge-gold inline-flex mt-4">{s.tag}</span>
@@ -319,7 +323,7 @@ function ServicesSection({ setPage }) {
         ))}
       </div>
       <Reveal className="text-center mt-12">
-        <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+        <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
           💬 احجز استشارة مجانية الآن
         </a>
       </Reveal>
@@ -368,15 +372,15 @@ function PortfolioSection() {
     <section id="portfolio" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-8">
         <SectionLabel>MY WORK</SectionLabel>
-        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>أعمالي الحقيقية</h2>
+        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>أعمالي الحقيقية</h2>
         <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">تصاميم ومحتوى نفّذته لعملاء حقيقيين في مجالات مختلفة</p>
       </Reveal>
 
       {allCategories.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2 mb-12">
-          <button onClick={() => setFilter("all")} className="px-5 py-2 rounded-full text-xs font-bold tracking-wider border transition-all duration-200" style={{ background: filter === "all" ? "rgba(201,150,58,0.12)" : "transparent", borderColor: filter === "all" ? GOLD : "#2A2A2A", color: filter === "all" ? GOLD : "#666" }}>الكل</button>
+          <button onClick={() => setFilter("all")} className="px-5 py-2 rounded-full text-xs font-bold tracking-wider border transition duration-200" style={{ background: filter === "all" ? "rgba(201,150,58,0.12)" : "transparent", borderColor: filter === "all" ? GOLD : "#2A2A2A", color: filter === "all" ? GOLD : "#666" }}>الكل</button>
           {allCategories.map((c) => (
-            <button key={c} onClick={() => setFilter(c)} className="px-5 py-2 rounded-full text-xs font-bold tracking-wider border transition-all duration-200" style={{ background: filter === c ? "rgba(201,150,58,0.12)" : "transparent", borderColor: filter === c ? GOLD : "#2A2A2A", color: filter === c ? GOLD : "#666" }}>{c}</button>
+            <button key={c} onClick={() => setFilter(c)} className="px-5 py-2 rounded-full text-xs font-bold tracking-wider border transition duration-200" style={{ background: filter === c ? "rgba(201,150,58,0.12)" : "transparent", borderColor: filter === c ? GOLD : "#2A2A2A", color: filter === c ? GOLD : "#666" }}>{c}</button>
           ))}
         </div>
       )}
@@ -392,7 +396,7 @@ function PortfolioSection() {
             <div onClick={() => openLightbox(item)} className="card-pro overflow-hidden cursor-pointer group" style={item.is_pinned ? { borderColor: "rgba(201,150,58,0.5)" } : undefined}>
               <div className="relative h-52 overflow-hidden">
                 {item.main_image_url && (
-                  <img src={item.main_image_url} alt={item.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <Image src={item.main_image_url} alt={item.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
                 )}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                   <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl scale-50 group-hover:scale-100 transition-transform duration-300" style={{ background: GOLD }}>👁️</div>
@@ -446,10 +450,10 @@ function PortfolioSection() {
       )}
 
       <Reveal className="text-center mt-14 flex flex-wrap justify-center gap-4">
-        <a href="#portfolio-gallery" className="inline-block font-black px-8 py-4 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: "transparent", border: `1px solid ${GOLD}`, color: GOLD }}>
+        <a href="#portfolio-gallery" className="inline-block font-black px-8 py-4 rounded-xl text-sm transition duration-300 hover:-translate-y-1" style={{ background: "transparent", border: `1px solid ${GOLD}`, color: GOLD }}>
           🎨 شاهد كل الأعمال
         </a>
-        <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+        <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
           🚀 ابدأ مشروعك الآن
         </a>
       </Reveal>
@@ -462,17 +466,17 @@ function TipsSection() {
     <section id="tips" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
         <SectionLabel>TIPS & INSIGHTS</SectionLabel>
-        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>نصائح للمشاريع</h2>
+        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>نصائح للمشاريع</h2>
         <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">خلاصة تجربتي — نصائح عملية تساعدك تنمو رقمياً بشكل أسرع وأذكى</p>
       </Reveal>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {tips.map((t, i) => (
           <Reveal key={i} delay={i * 35}>
-            <div className="rounded-2xl p-8 border relative overflow-hidden transition-all duration-300 group hover:-translate-y-1" style={{ background: "#161616", borderColor: "#2A2A2A" }}
+            <div className="rounded-2xl p-8 border relative overflow-hidden transition duration-300 group hover:-translate-y-1" style={{ background: "#161616", borderColor: "#2A2A2A" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,150,58,0.25)"; e.currentTarget.style.boxShadow = "0 20px 60px rgba(0,0,0,.4)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "#2A2A2A"; e.currentTarget.style.boxShadow = "none"; }}>
               <div className="absolute bottom-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
-              <span className="absolute top-4 left-5 text-5xl font-black leading-none pointer-events-none select-none" style={{ fontFamily: "'Cinzel', serif", background: "linear-gradient(135deg, rgba(201,150,58,0.18), rgba(201,150,58,0.05))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.num}</span>
+              <span className="absolute top-4 left-5 text-5xl font-black leading-none pointer-events-none select-none" style={{ fontFamily: "var(--font-cinzel), serif", background: "linear-gradient(135deg, rgba(201,150,58,0.18), rgba(201,150,58,0.05))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t.num}</span>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-4 relative z-10" style={{ background: "rgba(201,150,58,0.08)", border: "1px solid rgba(201,150,58,0.2)" }}>{t.icon}</div>
               <h3 className="text-sm font-bold text-white mb-2 relative z-10">{t.title}</h3>
               <p className="text-xs leading-relaxed relative z-10" style={{ color: "#666" }}>{t.body}</p>
@@ -489,7 +493,7 @@ function TipsSection() {
             const url = URL.createObjectURL(blob);
             window.open(url, '_blank');
           }}
-          className="inline-block font-black px-10 py-4 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 border"
+          className="inline-block font-black px-10 py-4 rounded-xl text-sm transition duration-300 hover:-translate-y-1 border"
           style={{ color: GOLD, borderColor: GOLD, background: "rgba(201,150,58,0.08)" }}
         >
           📊 دراسة تحليلية وإستراتيجية نمو المبيعات (خطة الـ 30 يومًا)
@@ -595,7 +599,7 @@ function BCard({ children, style = {} }) {
 
 function BSectionTitle({ icon, children }) {
   return (
-    <h3 style={{ fontFamily: "'Cairo',sans-serif", fontSize: 18, fontWeight: 900, color: GOLD2, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+    <h3 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: 18, fontWeight: 900, color: GOLD2, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
       <span>{icon}</span>{children}
     </h3>
   );
@@ -879,7 +883,7 @@ function BuilderPage({ setPage, initialData }) {
             >
               → رجوع للرئيسية
             </button>
-            <h1 style={{ fontFamily: "'Cairo',sans-serif", fontSize: "clamp(26px,4vw,38px)", fontWeight: 900, color: "#fff", marginBottom: 8 }}>
+            <h1 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: "clamp(26px,4vw,38px)", fontWeight: 900, color: "#fff", marginBottom: 8 }}>
               <GoldText>✨ خصص باقتك</GoldText>
             </h1>
             <p style={{ color: "#888", fontSize: 14, marginBottom: 30 }}>اختار احتياجاتك خطوة بخطوة، والسعر بيتحدث لحظياً</p>
@@ -992,7 +996,7 @@ function BuilderPage({ setPage, initialData }) {
           {pkg && (
             <Reveal>
               <div>
-                <h2 style={{ fontFamily: "'Cairo',sans-serif", fontSize: 20, fontWeight: 900, color: "#fff", margin: "30px 0 16px" }}>
+                <h2 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: 20, fontWeight: 900, color: "#fff", margin: "30px 0 16px" }}>
                   ➕ خدمات إضافية
                 </h2>
 
@@ -1112,7 +1116,7 @@ function BuilderPage({ setPage, initialData }) {
         {/* ===== Sticky summary ===== */}
         <div style={{ alignSelf: "start", position: "sticky", top: 100 }}>
           <div style={{ background: "linear-gradient(160deg,#120c02,#080602)", border: `1px solid rgba(201,150,58,0.3)`, borderRadius: 20, padding: "22px 20px", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
-            <h3 style={{ fontFamily: "'Cairo',sans-serif", fontSize: 16, fontWeight: 900, color: GOLD2, marginBottom: 14 }}>💰 ملخص الطلب</h3>
+            <h3 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: 16, fontWeight: 900, color: GOLD2, marginBottom: 14 }}>💰 ملخص الطلب</h3>
 
             <div style={{ fontSize: 13, color: "#ccc", lineHeight: 2 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}><span>اسم المشروع</span><span style={{ color: "#fff" }}>{savedName || "—"}</span></div>
@@ -1129,7 +1133,7 @@ function BuilderPage({ setPage, initialData }) {
 
             <div style={{ borderTop: "1px solid rgba(201,150,58,0.2)", marginTop: 14, paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <span style={{ color: "#999", fontSize: 13, fontWeight: 700 }}>الإجمالي</span>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 28, fontWeight: 900, color: GOLD3 }}>
+              <span style={{ fontFamily: "var(--font-cinzel), serif", fontSize: 28, fontWeight: 900, color: GOLD3 }}>
                 {animatedTotal.toLocaleString()} <span style={{ fontSize: 13, color: "#999" }}>ج.م</span>
               </span>
             </div>
@@ -1293,7 +1297,7 @@ function PricingSection({ setPage }) {
         {/* Header */}
         <div className="text-center mb-14">
           <p style={{ color: GOLD2, fontSize: 13, letterSpacing: 6, fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>PRICING PLANS</p>
-          <h2 style={{ fontFamily: "'Cairo', sans-serif", fontSize: "clamp(28px,5vw,44px)", fontWeight: 900, color: "#fff", marginBottom: 14, lineHeight: 1.2 }}>
+          <h2 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: "clamp(28px,5vw,44px)", fontWeight: 900, color: "#fff", marginBottom: 14, lineHeight: 1.2 }}>
             اختار الباقة اللي تناسبك
           </h2>
           <div style={{ width: 60, height: 3, background: `linear-gradient(90deg,transparent,${GOLD},transparent)`, margin: "0 auto 16px" }} />
@@ -1335,11 +1339,11 @@ function PricingSection({ setPage }) {
 
                 <div style={{ textAlign: "center", marginBottom: 18 }}>
                   <div style={{ fontSize: 38, marginBottom: 6 }}>{pkg.icon}</div>
-                  <h3 style={{ fontFamily: "'Cairo',sans-serif", fontSize: 19, fontWeight: 900, color: "#fff", marginBottom: 4 }}>
+                  <h3 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: 19, fontWeight: 900, color: "#fff", marginBottom: 4 }}>
                     باقة {pkg.tier}
                   </h3>
                   <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4 }}>
-                    <span style={{ fontFamily: "'Cinzel',serif", fontSize: 30, fontWeight: 900, color: pkg.color }}>{pkg.price}</span>
+                    <span style={{ fontFamily: "var(--font-cinzel), serif", fontSize: 30, fontWeight: 900, color: pkg.color }}>{pkg.price}</span>
                     <span style={{ color: "#666", fontSize: 12 }}>جنيه / شهر</span>
                   </div>
                 </div>
@@ -1402,7 +1406,7 @@ function PricingSection({ setPage }) {
               cursor: "pointer",
               background: `linear-gradient(135deg,${GOLD},${GOLD2})`,
               color: "#000",
-              fontFamily: "'Cairo',sans-serif",
+              fontFamily: "var(--font-cairo), sans-serif",
               fontSize: 16,
               fontWeight: 900,
               letterSpacing: 0.5,
@@ -1419,7 +1423,7 @@ function PricingSection({ setPage }) {
         {/* Extras Section */}
         <div style={{ borderTop: "1px solid rgba(201,150,58,0.15)", paddingTop: 50 }}>
           <div className="text-center mb-10">
-            <h3 style={{ fontFamily: "'Cairo',sans-serif", fontSize: 22, fontWeight: 900, color: GOLD2, marginBottom: 6 }}>
+            <h3 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: 22, fontWeight: 900, color: GOLD2, marginBottom: 6 }}>
               ✨ خدمات إضافية
             </h3>
             <p style={{ color: "#666", fontSize: 13 }}>خارج نطاق الباقات — حسب الطلب</p>
@@ -1441,7 +1445,7 @@ function PricingSection({ setPage }) {
         <div style={{ marginTop: 60, background: `linear-gradient(135deg,rgba(201,150,58,0.08),rgba(201,150,58,0.04))`, border: "1px solid rgba(201,150,58,0.2)", borderRadius: 20, padding: "36px 32px", textAlign: "center", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 500, height: 200, background: "radial-gradient(ellipse, rgba(201,150,58,0.07) 0%, transparent 70%)", pointerEvents: "none" }} />
           <p style={{ color: GOLD3, fontSize: 14, fontWeight: 700, marginBottom: 8, letterSpacing: 2 }}>🍔 عرض خاص</p>
-          <h3 style={{ fontFamily: "'Cairo',sans-serif", fontSize: "clamp(18px,3vw,26px)", fontWeight: 900, color: "#fff", marginBottom: 10, lineHeight: 1.4 }}>
+          <h3 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: "clamp(18px,3vw,26px)", fontWeight: 900, color: "#fff", marginBottom: 10, lineHeight: 1.4 }}>
             "ابدأ معنا شهر تجريبي وشاهد الفرق في شكل البراند ومحتواك التسويقي"
           </h3>
           <p style={{ color: "#888", fontSize: 13, marginBottom: 22 }}>مناسب للمطاعم والكافيهات اللي عايزة ترفع المبيعات وتطور شكل السوشيال ميديا بتاعتها</p>
@@ -1476,7 +1480,7 @@ function WhySection() {
             <div className="absolute inset-0 rounded-full border-2" style={{ borderColor: "rgba(201,150,58,0.15)", animation: "spin-slow 20s linear infinite" }} />
             <div className="absolute rounded-full border" style={{ inset: 20, borderColor: "rgba(201,150,58,0.08)" }} />
             <div className="relative z-10 text-center">
-              <div className="text-6xl font-black" style={{ fontFamily: "'Cinzel', serif", background: `linear-gradient(135deg, ${GOLD}, ${GOLD3})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>A</div>
+              <div className="text-6xl font-black" style={{ fontFamily: "var(--font-cinzel), serif", background: `linear-gradient(135deg, ${GOLD}, ${GOLD3})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>A</div>
               <div className="text-xs tracking-widest font-bold" style={{ color: "#555", letterSpacing: 3 }}>MARKETING</div>
             </div>
           </div>
@@ -1484,7 +1488,7 @@ function WhySection() {
         <div>
           <Reveal>
             <SectionLabel>WHY US</SectionLabel>
-            <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-8 text-white" style={{ fontFamily: "'Cinzel', serif" }}>لماذا تختار Abdullah Marketing؟</h2>
+            <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-8 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>لماذا تختار Abdullah Marketing؟</h2>
           </Reveal>
           <div className="space-y-6">
             {whyPoints.map((p, i) => (
@@ -1500,7 +1504,7 @@ function WhySection() {
             ))}
           </div>
           <Reveal delay={200}>
-            <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block mt-8 font-black px-8 py-3 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+            <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block mt-8 font-black px-8 py-3 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
               💬 تكلم معايا دلوقتي
             </a>
           </Reveal>
@@ -1515,7 +1519,7 @@ function ProcessSection() {
     <section id="process" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-16">
         <SectionLabel>HOW WE WORK</SectionLabel>
-        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>آلية العمل</h2>
+        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>آلية العمل</h2>
         <p className="text-sm text-gray-500">أربع خطوات من التواصل الأول حتى النتائج</p>
       </Reveal>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto relative">
@@ -1523,11 +1527,11 @@ function ProcessSection() {
         {steps.map((s, i) => (
           <Reveal key={i} delay={i * 55}>
             <div className="text-center group">
-              <div className="relative w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center text-2xl transition-all duration-300 group-hover:scale-105" style={{ background: "#161616", border: "1px solid #2A2A2A" }}
+              <div className="relative w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center text-2xl transition duration-300 group-hover:scale-105" style={{ background: "#161616", border: "1px solid #2A2A2A" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.background = "rgba(201,150,58,0.07)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "#2A2A2A"; e.currentTarget.style.background = "#161616"; }}>
                 <span className="text-2xl">{s.icon}</span>
-                <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black" style={{ background: GOLD, color: "#000", fontFamily: "'Cinzel', serif" }}>{s.n}</span>
+                <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black" style={{ background: GOLD, color: "#000", fontFamily: "var(--font-cinzel), serif" }}>{s.n}</span>
               </div>
               <h4 className="text-sm font-bold text-white mb-2">{s.title}</h4>
               <p className="text-xs leading-relaxed" style={{ color: "#666" }}>{s.desc}</p>
@@ -1536,7 +1540,7 @@ function ProcessSection() {
         ))}
       </div>
       <Reveal className="text-center mt-14">
-        <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+        <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
           🚀 ابدأ مشروعك الآن
         </a>
       </Reveal>
@@ -1562,7 +1566,7 @@ function FeaturedProjectSection() {
     <section id="case-study" dir="rtl" aria-labelledby="case-study-heading" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-6">
         <SectionLabel>FEATURED CASE STUDY</SectionLabel>
-        <h2 id="case-study-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>آخر أعمالنا</h2>
+        <h2 id="case-study-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>آخر أعمالنا</h2>
         <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">دراسة حالة كاملة توضح كيف حوّلنا فكرة مطعم إلى تجربة رقمية متكاملة</p>
       </Reveal>
 
@@ -1580,7 +1584,7 @@ function FeaturedProjectSection() {
                 </span>
               </div>
               <div className="relative flex-1 overflow-hidden">
-                <img src={IMG_LCDB_WEBSITE} alt="لقطة شاشة من الموقع الرسمي لـ La Casa De Burger" loading="lazy" className="w-full h-full object-cover object-top" />
+                <Image src={IMG_LCDB_WEBSITE} alt="لقطة شاشة من الموقع الرسمي لـ La Casa De Burger" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover object-top" />
                 <div className="absolute inset-0" style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.7), transparent 40%)" }} />
                 <div className="absolute bottom-4 right-4 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: "rgba(201,150,58,0.95)", color: "#000" }}>
                   Restaurant Website & Digital Menu
@@ -1590,16 +1594,16 @@ function FeaturedProjectSection() {
 
             <div className="p-8 md:p-10">
               <div className="text-xs font-bold tracking-widest mb-2" style={{ color: GOLD }}>CASE STUDY</div>
-              <h3 className="text-2xl font-black text-white mb-4" style={{ fontFamily: "'Cinzel', serif" }}>La Casa De Burger</h3>
+              <h3 className="text-2xl font-black text-white mb-4" style={{ fontFamily: "var(--font-cinzel), serif" }}>La Casa De Burger</h3>
               <p className="text-sm leading-relaxed mb-6" style={{ color: "#999" }}>
                 قمنا بتصميم وتطوير موقع إلكتروني احترافي لمطعم La Casa De Burger بهدف تقديم تجربة رقمية حديثة للعملاء، مع عرض المنيو بشكل منظم، وسهولة الوصول للطلبات عبر QR Code وWhatsApp، مع الحفاظ على الهوية البصرية للمطعم وتحسين تجربة المستخدم على جميع الأجهزة.
               </p>
 
               <div className="flex flex-wrap gap-3 mb-8">
-                <a href="https://lacasa-de-burger-website.vercel.app/" target="_blank" rel="noreferrer" className="inline-block font-black px-6 py-3 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+                <a href="https://lacasa-de-burger-website.vercel.app/" target="_blank" rel="noreferrer" className="inline-block font-black px-6 py-3 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
                   🌐 زيارة الموقع
                 </a>
-                <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-bold px-6 py-3 rounded-xl text-sm transition-all duration-300 border" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
+                <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-bold px-6 py-3 rounded-xl text-sm transition duration-300 border" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
                   ابدأ مشروع مشابه
                 </a>
               </div>
@@ -1608,7 +1612,7 @@ function FeaturedProjectSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {caseStudyServices.map((s, i) => (
                   <Reveal key={i} delay={i * 35}>
-                    <div className="flex items-center gap-3 rounded-xl p-3 border transition-all duration-300 hover:-translate-y-0.5" style={{ background: "#1A1A1A", borderColor: "#2A2A2A" }}
+                    <div className="flex items-center gap-3 rounded-xl p-3 border transition duration-300 hover:-translate-y-0.5" style={{ background: "#1A1A1A", borderColor: "#2A2A2A" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = "#2A2A2A"; }}>
                       <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0" style={{ background: "rgba(201,150,58,0.1)", border: "1px solid rgba(201,150,58,0.2)" }}>{s.icon}</span>
@@ -1641,12 +1645,12 @@ function TestimonialsSection() {
     <section id="testimonials" dir="rtl" aria-labelledby="testimonials-heading" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
         <SectionLabel>CLIENT VOICE</SectionLabel>
-        <h2 id="testimonials-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>آراء العملاء</h2>
+        <h2 id="testimonials-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>آراء العملاء</h2>
         <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">ثقة عملائنا هي أكبر دليل على جودة العمل</p>
       </Reveal>
 
       <Reveal>
-        <div className="max-w-2xl mx-auto rounded-3xl p-8 md:p-10 border relative text-center transition-all duration-300 hover:-translate-y-1" style={{ background: "#161616", borderColor: "rgba(201,150,58,0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
+        <div className="max-w-2xl mx-auto rounded-3xl p-8 md:p-10 border relative text-center transition duration-300 hover:-translate-y-1" style={{ background: "#161616", borderColor: "rgba(201,150,58,0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
           <div className="text-4xl mb-4" style={{ color: GOLD, opacity: 0.6 }} aria-hidden="true">❝</div>
 
           <p className="text-sm md:text-base leading-relaxed mb-6" style={{ color: "#ddd" }}>{testimonial.quote}</p>
@@ -1658,8 +1662,8 @@ function TestimonialsSection() {
           </div>
 
           <div className="flex items-center justify-center gap-3">
-            <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0" style={{ border: `2px solid ${GOLD}`, boxShadow: "0 0 20px rgba(201,150,58,0.3)" }}>
-              <img src={testimonial.img} alt={`${testimonial.client} logo`} loading="lazy" className="w-full h-full object-cover" />
+            <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0" style={{ border: `2px solid ${GOLD}`, boxShadow: "0 0 20px rgba(201,150,58,0.3)" }}>
+              <Image src={testimonial.img} alt={`${testimonial.client} logo`} fill sizes="56px" className="object-cover" />
             </div>
             <div className="text-right">
               <div className="text-sm font-bold text-white">{testimonial.client}</div>
@@ -1694,16 +1698,16 @@ function AboutPage({ setPage }) {
       <div className="text-center px-6 pt-36 pb-20 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #060606 100%)" }}>
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" style={{ width: 600, height: 400, background: "radial-gradient(ellipse, rgba(201,150,58,0.08) 0%, transparent 65%)" }} />
         <div className="w-28 h-28 rounded-full mx-auto mb-6 relative overflow-hidden" style={{ border: `2px solid ${GOLD}`, boxShadow: "0 0 40px rgba(201,150,58,0.2)" }}>
-          <img src={IMG_AVATAR} alt="Abdullah Diaa" loading="lazy" className="w-full h-full object-cover" />
+          <Image src={IMG_AVATAR} alt="Abdullah Diaa" fill sizes="112px" priority className="object-cover" />
         </div>
-        <h1 className="text-3xl md:text-4xl font-black tracking-widest mb-1" style={{ fontFamily: "'Cinzel', serif", color: GOLD }}>ABDULLAH DIAA</h1>
+        <h1 className="text-3xl md:text-4xl font-black tracking-widest mb-1" style={{ fontFamily: "var(--font-cinzel), serif", color: GOLD }}>ABDULLAH DIAA</h1>
         <p className="text-sm tracking-widest font-bold mb-3" style={{ color: "#555", letterSpacing: 4 }}>SOCIAL MEDIA MARKETING SPECIALIST</p>
         <p className="text-sm" style={{ color: "#666" }}>📍 أسيوط، مصر</p>
-        <a href="https://www.instagram.com/3bdullah.dyaa?igsh=MTFnMDM4NHUxemc3cQ==" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 mt-5 px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105" style={{ background: "linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)", color: "#fff", boxShadow: "0 4px 20px rgba(131,58,180,0.3)" }}>
+        <a href="https://www.instagram.com/3bdullah.dyaa?igsh=MTFnMDM4NHUxemc3cQ==" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 mt-5 px-5 py-2 rounded-full text-sm font-bold transition duration-300 hover:scale-105" style={{ background: "linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)", color: "#fff", boxShadow: "0 4px 20px rgba(131,58,180,0.3)" }}>
           📸 تابعني على إنستقرام @3bdullah.dyaa
         </a>
         <div>
-          <button onClick={() => setCvOpen(true)} className="inline-flex items-center gap-2 mt-4 px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105 border" style={{ borderColor: GOLD, color: GOLD, background: "rgba(201,150,58,0.06)" }}>
+          <button onClick={() => setCvOpen(true)} className="inline-flex items-center gap-2 mt-4 px-5 py-2 rounded-full text-sm font-bold transition duration-300 hover:scale-105 border" style={{ borderColor: GOLD, color: GOLD, background: "rgba(201,150,58,0.06)" }}>
             📄 عرض السيرة الذاتية (CV)
           </button>
         </div>
@@ -1734,7 +1738,7 @@ function AboutPage({ setPage }) {
         </div>
         <Reveal>
           <div className="rounded-2xl p-8 border mb-10" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.06), rgba(201,150,58,0.02))", borderColor: "rgba(201,150,58,0.2)" }}>
-            <h3 className="text-lg font-black text-white mb-3" style={{ fontFamily: "'Cinzel', serif" }}>🌟 رؤيتي</h3>
+            <h3 className="text-lg font-black text-white mb-3" style={{ fontFamily: "var(--font-cinzel), serif" }}>🌟 رؤيتي</h3>
             <p className="text-sm leading-loose" style={{ color: "#888" }}>أؤمن أن كل مشروع صغير يستحق حضوراً رقمياً احترافياً — هدفي إن كل صاحب عمل في أسيوط يلاقي في Abdullah Marketing الشريك الموثوق اللي يساعده ينمو ويوصل لجمهوره الصح بأقل تكلفة وأعلى تأثير.</p>
           </div>
         </Reveal>
@@ -1742,7 +1746,7 @@ function AboutPage({ setPage }) {
         {/* ===== المهارات والخدمات (من السيرة الذاتية) ===== */}
         <Reveal>
           <div className="mb-3 text-xs font-bold tracking-widest text-center" style={{ color: GOLD }}>✦ خبراتي</div>
-          <h3 className="text-2xl font-black text-white text-center mb-10" style={{ fontFamily: "'Cinzel', serif" }}>مجالات التخصص</h3>
+          <h3 className="text-2xl font-black text-white text-center mb-10" style={{ fontFamily: "var(--font-cinzel), serif" }}>مجالات التخصص</h3>
         </Reveal>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
           {[
@@ -1772,7 +1776,7 @@ function AboutPage({ setPage }) {
         {/* ===== الشهادات ===== */}
         <Reveal>
           <div className="mb-3 text-xs font-bold tracking-widest text-center" style={{ color: GOLD }}>✦ الشهادات</div>
-          <h3 className="text-2xl font-black text-white text-center mb-10" style={{ fontFamily: "'Cinzel', serif" }}>شهادات معتمدة</h3>
+          <h3 className="text-2xl font-black text-white text-center mb-10" style={{ fontFamily: "var(--font-cinzel), serif" }}>شهادات معتمدة</h3>
         </Reveal>
         {testimonialsList.map((t) => (
           <Reveal key={t.id}>
@@ -1806,7 +1810,7 @@ function AboutPage({ setPage }) {
         <div className="mb-6" />
 
         <div className="text-center">
-          <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+          <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
             تواصل معي الآن 🚀
           </a>
         </div>
@@ -1823,7 +1827,7 @@ function AboutPage({ setPage }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5 px-2">
-              <h3 className="text-lg md:text-xl font-black text-white" style={{ fontFamily: "'Cinzel', serif" }}>السيرة الذاتية — عبدالله ضياء الدين</h3>
+              <h3 className="text-lg md:text-xl font-black text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>السيرة الذاتية — عبدالله ضياء الدين</h3>
               <button
                 onClick={() => setCvOpen(false)}
                 className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
@@ -1862,13 +1866,13 @@ function ContactPage() {
       <div className="max-w-lg mx-auto w-full">
         <Reveal className="text-center mb-12">
           <SectionLabel>CONTACT US</SectionLabel>
-          <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>تواصل معنا الآن</h2>
+          <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>تواصل معنا الآن</h2>
           <p className="text-sm text-gray-500 leading-relaxed">جاهزون للرد عليك في أي وقت — اختر القناة الأنسب لك وابدأ رحلة النمو الرقمي اليوم</p>
         </Reveal>
         <div className="space-y-3 mb-10">
           {contacts.map((c, i) => (
             <Reveal key={i} delay={i * 45}>
-              <a href={c.href} target="_blank" rel="noreferrer" className="flex items-center gap-4 p-5 rounded-2xl border transition-all duration-300 hover:-translate-x-1 group relative overflow-hidden" style={{ background: "#161616", borderColor: i === 0 ? "rgba(37,211,102,0.4)" : "#2A2A2A" }}
+              <a href={c.href} target="_blank" rel="noreferrer" className="flex items-center gap-4 p-5 rounded-2xl border transition duration-300 hover:-translate-x-1 group relative overflow-hidden" style={{ background: "#161616", borderColor: i === 0 ? "rgba(37,211,102,0.4)" : "#2A2A2A" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = i === 0 ? "rgba(37,211,102,0.6)" : "rgba(201,150,58,0.3)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = i === 0 ? "rgba(37,211,102,0.4)" : "#2A2A2A"; }}>
                 <div className="absolute right-0 top-0 bottom-0 w-1 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center" style={{ background: i === 0 ? "#25D366" : GOLD }} />
@@ -1884,9 +1888,9 @@ function ContactPage() {
         </div>
         <Reveal>
           <div className="rounded-2xl p-8 text-center border" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.08), rgba(201,150,58,0.03))", borderColor: "rgba(201,150,58,0.2)" }}>
-            <h3 className="text-xl font-black text-white mb-2" style={{ fontFamily: "'Cinzel', serif" }}>مستعد تنمو رقمياً؟</h3>
+            <h3 className="text-xl font-black text-white mb-2" style={{ fontFamily: "var(--font-cinzel), serif" }}>مستعد تنمو رقمياً؟</h3>
             <p className="text-sm leading-relaxed mb-6" style={{ color: "#777" }}>تواصل معنا اليوم واحصل على استشارة مجانية لحسابك على السوشيال ميديا</p>
-            <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-8 py-3 rounded-xl text-black text-sm transition-all duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+            <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-8 py-3 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
               ابدأ الآن مجاناً 🚀
             </a>
           </div>
@@ -1900,7 +1904,7 @@ function PageHeader({ label, title, desc }) {
   return (
     <Reveal className="text-center mb-14 max-w-2xl mx-auto">
       <SectionLabel>{label}</SectionLabel>
-      <h1 className="text-3xl md:text-5xl font-black tracking-wide mt-3 mb-4" style={{ fontFamily: "'Cinzel', serif", color: "var(--text-primary)" }}>{title}</h1>
+      <h1 className="text-3xl md:text-5xl font-black tracking-wide mt-3 mb-4" style={{ fontFamily: "var(--font-cinzel), serif", color: "var(--text-primary)" }}>{title}</h1>
       <p className="text-sm md:text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>{desc}</p>
     </Reveal>
   );
@@ -1945,14 +1949,14 @@ function CaseStudiesPage() {
               <Reveal key={cs.id} delay={i * 90}>
                 <div className="card-pro rounded-2xl overflow-hidden h-full flex flex-col">
                   {cs.image_url && (
-                    <div className="aspect-video w-full overflow-hidden">
-                      <img src={cs.image_url} alt={cs.client_name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                    <div className="relative aspect-video w-full overflow-hidden">
+                      <Image src={cs.image_url} alt={cs.client_name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
                     </div>
                   )}
                   <div className="p-7 flex flex-col flex-1">
                     <div className="flex items-start justify-between mb-4">
                       {cs.industry && <span className="badge-gold">{cs.industry}</span>}
-                      {cs.badge_stat && <span className="text-2xl font-black" style={{ color: "var(--gold-light)", fontFamily: "'Cinzel', serif" }}>{cs.badge_stat}</span>}
+                      {cs.badge_stat && <span className="text-2xl font-black" style={{ color: "var(--gold-light)", fontFamily: "var(--font-cinzel), serif" }}>{cs.badge_stat}</span>}
                     </div>
                     <h3 className="text-lg font-black mb-1" style={{ color: "var(--text-primary)" }}>{cs.client_name}</h3>
                     {cs.metric_label && <p className="text-xs font-semibold mb-3" style={{ color: "var(--gold)" }}>{cs.metric_label}</p>}
@@ -2005,7 +2009,7 @@ function PostsPage() {
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
-              className="text-xs font-bold px-4 py-2 rounded-full transition-all"
+              className="text-xs font-bold px-4 py-2 rounded-full transition"
               style={{
                 border: `1px solid ${filter === f.id ? "var(--gold)" : "var(--border)"}`,
                 background: filter === f.id ? "rgba(201,150,58,0.14)" : "transparent",
@@ -2027,7 +2031,7 @@ function PostsPage() {
                 <div className="card-pro rounded-2xl overflow-hidden">
                   <div className="aspect-square flex items-center justify-center relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.14), rgba(201,150,58,0.03))" }}>
                     {p.media_url ? (
-                      <img src={p.media_url} alt={p.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                      <Image src={p.media_url} alt={p.title} fill sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw" className="object-cover" />
                     ) : (
                       <span className="text-4xl opacity-40">✦</span>
                     )}
@@ -2076,8 +2080,8 @@ function BlogPage() {
             {items.map((b, i) => (
               <Reveal key={b.id} delay={i * 70}>
                 <div className="card-pro rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-5">
-                  <div className="w-full sm:w-28 h-20 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.16), rgba(201,150,58,0.04))", color: "var(--gold)" }}>
-                    {b.cover_image_url ? <img src={b.cover_image_url} alt={b.title} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : "✎"}
+                  <div className="relative w-full sm:w-28 h-20 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.16), rgba(201,150,58,0.04))", color: "var(--gold)" }}>
+                    {b.cover_image_url ? <Image src={b.cover_image_url} alt={b.title} fill sizes="112px" className="object-cover" /> : "✎"}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -2132,8 +2136,8 @@ function Navbar({ page, setPage, clientSession }) {
   };
   return (
     <>
-      <nav dir="rtl" className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 transition-all duration-300 glass-panel" style={{ boxShadow: scrolled ? "0 4px 40px rgba(0,0,0,0.45)" : "none", borderBottom: scrolled ? "1px solid var(--border-soft)" : "1px solid transparent" }}>
-        <button onClick={() => handleNav("home")} className="font-black tracking-widest text-sm transition-opacity hover:opacity-80" style={{ fontFamily: "'Cinzel', serif", background: `linear-gradient(135deg, ${GOLD}, ${GOLD3}, ${GOLD})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>ABDULLAH</button>
+      <nav dir="rtl" className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 transition duration-300 glass-panel" style={{ boxShadow: scrolled ? "0 4px 40px rgba(0,0,0,0.45)" : "none", borderBottom: scrolled ? "1px solid var(--border-soft)" : "1px solid transparent" }}>
+        <button onClick={() => handleNav("home")} className="font-black tracking-widest text-sm transition-opacity hover:opacity-80" style={{ fontFamily: "var(--font-cinzel), serif", background: `linear-gradient(135deg, ${GOLD}, ${GOLD3}, ${GOLD})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>ABDULLAH</button>
         <ul className="hidden md:flex gap-7 list-none">
           {links.map(l => (
             <li key={l.id}>
@@ -2141,7 +2145,7 @@ function Navbar({ page, setPage, clientSession }) {
                 onMouseEnter={e => { e.currentTarget.style.color = GOLD; }}
                 onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; }}>
                 {l.label}
-                <span className="absolute bottom-0 right-0 h-px transition-all duration-300 group-hover:w-full rounded-full" style={{ width: 0, background: `linear-gradient(90deg, ${GOLD}, ${GOLD3})` }} />
+                <span className="absolute bottom-0 right-0 h-px transition duration-300 group-hover:w-full rounded-full" style={{ width: 0, background: `linear-gradient(90deg, ${GOLD}, ${GOLD3})` }} />
               </button>
             </li>
           ))}
@@ -2185,7 +2189,7 @@ function Footer({ setPage }) {
     <footer dir="rtl" className="px-6 md:px-10 pt-10 pb-8" style={{ background: "var(--bg-elevated)", borderTop: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between flex-wrap gap-6">
         <div>
-          <span className="font-black tracking-widest text-sm block" style={{ fontFamily: "'Cinzel', serif", color: GOLD }}>ABDULLAH MARKETING</span>
+          <span className="font-black tracking-widest text-sm block" style={{ fontFamily: "var(--font-cinzel), serif", color: GOLD }}>ABDULLAH MARKETING</span>
           <span className="text-xs mt-1 block" style={{ color: "var(--text-muted)" }}>منصة تسويق رقمي احترافية · أسيوط، مصر</span>
         </div>
         <div className="flex gap-2.5">
@@ -2195,7 +2199,7 @@ function Footer({ setPage }) {
             { href: "https://www.facebook.com/share/1DwbCov7zr/", icon: "📘", title: "Facebook" },
             { href: "https://www.instagram.com/3bdullah.dyaa?igsh=MTFnMDM4NHUxemc3cQ==", icon: "📸", title: "Instagram Personal" },
           ].map((s, i) => (
-            <a key={i} href={s.href} target="_blank" rel="noreferrer" title={s.title} className="w-10 h-10 rounded-xl flex items-center justify-center text-base transition-all duration-200 hover:-translate-y-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+            <a key={i} href={s.href} target="_blank" rel="noreferrer" title={s.title} className="w-10 h-10 rounded-xl flex items-center justify-center text-base transition duration-200 hover:-translate-y-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.boxShadow = "0 8px 20px rgba(201,150,58,0.2)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}>{s.icon}</a>
           ))}

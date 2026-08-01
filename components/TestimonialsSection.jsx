@@ -1,5 +1,6 @@
 // src/components/TestimonialsSection.jsx
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { GOLD, GOLD3, FONT } from "../config/theme";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
 
@@ -25,14 +26,15 @@ export default function TestimonialsSection() {
             style={{ borderRadius: 16, border: "1px solid rgba(201,150,58,0.2)", background: "rgba(255,255,255,0.02)", padding: 16 }}
           >
             {t.image_url && (
-              <img
-                src={t.image_url}
-                alt={t.certificate_name}
-                loading="lazy"
-                decoding="async"
-                onClick={() => setZoomed(t)}
-                style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 10, marginBottom: 10, cursor: "zoom-in" }}
-              />
+              <div style={{ position: "relative", width: "100%", height: 140, borderRadius: 10, overflow: "hidden", marginBottom: 10, cursor: "zoom-in" }} onClick={() => setZoomed(t)}>
+                <Image
+                  src={t.image_url}
+                  alt={t.certificate_name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
             )}
             <h4 style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{t.certificate_name}</h4>
             <p style={{ color: "#888", fontSize: 12.5, margin: "4px 0" }}>{t.issuer}{t.issue_date ? ` · ${t.issue_date}` : ""}</p>

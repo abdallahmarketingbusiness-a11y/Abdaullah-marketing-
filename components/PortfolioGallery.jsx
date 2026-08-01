@@ -1,5 +1,6 @@
 // src/components/PortfolioGallery.jsx
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { GOLD, GOLD3, BG, FONT } from "../config/theme";
 import { fetchPortfolioItems, fetchDistinctCategories } from "../services/portfolioService";
 import PortfolioLightbox from "./PortfolioLightbox";
@@ -95,12 +96,13 @@ export default function PortfolioGallery() {
                 >
                   <div style={{ position: "relative", height: 190, overflow: "hidden" }}>
                     {item.main_image_url && (
-                      <img
+                      <Image
                         src={item.main_image_url}
                         alt={item.title}
-                        loading="lazy"
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         style={{
-                          width: "100%", height: "100%", objectFit: "cover",
+                          objectFit: "cover",
                           transform: hovered ? "scale(1.08)" : "scale(1)",
                           transition: "transform .35s ease",
                         }}

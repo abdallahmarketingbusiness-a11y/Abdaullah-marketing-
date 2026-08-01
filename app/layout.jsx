@@ -1,4 +1,20 @@
 import './globals.css'
+import { Cairo, Cinzel } from 'next/font/google'
+
+// next/font بيحمّل الخط وقت الـ build ويقدمه من نفس السيرفر بتاعك (self-hosted)،
+// من غير ما المتصفح يستنى fonts.googleapis.com / fonts.gstatic.com قبل ما يبدأ يعرض النص.
+const cairo = Cairo({
+  subsets: ['arabic', 'latin'],
+  weight: ['300', '400', '600', '700', '900'],
+  variable: '--font-cairo',
+  display: 'swap',
+})
+const cinzel = Cinzel({
+  subsets: ['latin'],
+  weight: ['700', '900'],
+  variable: '--font-cinzel',
+  display: 'swap',
+})
 
 export const metadata = {
   metadataBase: new URL('https://abdaullah-marketing-3dmf.vercel.app'),
@@ -30,15 +46,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Cinzel:wght@700;900&display=swap"
-        />
-      </head>
+    <html lang="ar" className={`${cairo.variable} ${cinzel.variable}`}>
       <body>{children}</body>
     </html>
   )
