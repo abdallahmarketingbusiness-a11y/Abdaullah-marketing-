@@ -11,19 +11,12 @@
   --gold-light: #E8BE6A;
   --gold-lighter: #F5D78E;
 
-  --bg: #0B0A08;
-  --bg-elevated: #141210;
-  --bg-card: #17140F;
-  --bg-card-hover: #1C1812;
-  --border: #2E2A22;
-  --border-soft: rgba(201,150,58,0.16);
-
-  /* Ambient glow layer — soft gold light sources, not a flat black page */
-  --glow-bg:
-    radial-gradient(1100px 700px at 12% -8%, rgba(201,150,58,0.16), transparent 60%),
-    radial-gradient(900px 600px at 108% 8%, rgba(245,215,142,0.10), transparent 55%),
-    radial-gradient(1000px 800px at 50% 115%, rgba(201,150,58,0.09), transparent 60%),
-    linear-gradient(180deg, #0D0B08 0%, #0B0A08 45%, #0E0C09 100%);
+  --bg: #060606;
+  --bg-elevated: #0E0E0E;
+  --bg-card: #121212;
+  --bg-card-hover: #161616;
+  --border: #2A2A2A;
+  --border-soft: rgba(201,150,58,0.14);
 
   --text-primary: #F2F2F2;
   --text-secondary: #A8A8A8;
@@ -66,18 +59,11 @@ html {
 }
 
 body {
-  font-family: 'Cairo', sans-serif;
-  background: var(--glow-bg);
-  background-color: var(--bg);
-  background-attachment: fixed;
+  font-family: var(--font-cairo), 'Cairo', sans-serif;
+  background: var(--bg);
   color: var(--text-primary);
   overflow-x: hidden;
   transition: background-color 0.35s var(--ease-out), color 0.35s var(--ease-out);
-}
-
-/* Light mode: no dark glow layer, just the clean light surface */
-html.light body {
-  background: var(--bg);
 }
 
 ::selection {
@@ -195,7 +181,7 @@ html.light .glass-panel {
 }
 
 .section-eyebrow {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-cinzel), 'Cinzel', serif;
   letter-spacing: 0.25em;
   font-size: 0.7rem;
   font-weight: 700;

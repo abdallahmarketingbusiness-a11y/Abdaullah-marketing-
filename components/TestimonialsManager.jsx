@@ -1,5 +1,6 @@
 // src/components/TestimonialsManager.jsx
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { GOLD, GOLD2, GOLD3, FONT } from "../config/theme";
 import { TESTIMONIAL_STATUS } from "../config/portfolioConfig";
 import {
@@ -225,7 +226,11 @@ export default function TestimonialsManager() {
               }}
             >
               <div style={{ display: "flex", gap: 10 }}>
-                {item.image_url && <img src={item.image_url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover" }} />}
+                {item.image_url && (
+                  <div style={{ position: "relative", width: 56, height: 56, borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
+                    <Image src={item.image_url} alt="" fill sizes="56px" style={{ objectFit: "cover" }} />
+                  </div>
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{item.certificate_name}</h3>
                   <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.issuer}</p>
