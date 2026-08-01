@@ -12,6 +12,7 @@
 import { supabase } from "../lib/supabaseClient";
 import { getCurrentClientSession } from "./clientAuthService";
 import { fetchPublishedAnalyticsForCurrentClient } from "./analyticsService";
+import { subscriptionStatusLabel } from "./subscriptionService";
 
 function money(n) {
   return `${Number(n || 0).toLocaleString("en-US")} ج.م`;
@@ -47,11 +48,29 @@ async function fetchPublished(table, orderField, { ascending = false, limit = nu
 }
 
 // ----------------------------------------------------------------------------
+// آخر اشتراك حقيقي للعميل الحالي — من package_subscriptions (نفس الجدول اللي
+// بيدير منه السوبر أدمن تبويب "الاشتراكات")، مش من جدول منفصل. بنفضّل عرض
+// اشتراك "نشط" لو موجود، ولو مفيش نعرض آخر واحد "قيد المراجعة"، وإلا آخر صف.
+// ----------------------------------------------------------------------------
+async function fetchLatestSubscriptionForCurrentClient() {
+  const clientId = await currentClientId();
+  if (!clientId) return null;
+  const { data, error } = await supabase
+    .from("package_subscriptions")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const rows = data || [];
+  return rows.find((r) => r.status === "active") || rows.find((r) => r.status === "pending") || rows[0] || null;
+}
+
+// ----------------------------------------------------------------------------
 // الرئيسية — ملخص مبني من عدة جداول حقيقية + آخر تقرير تحليلات
 // ----------------------------------------------------------------------------
 export async function getHomeSummary() {
-  const [subs, lastReports, lastCampaigns, lastNotes, analytics, activeCampaigns] = await Promise.all([
-    fetchPublished("client_subscriptions", "created_at", { limit: 1 }),
+  const [sub, lastReports, lastCampaigns, lastNotes, analytics, activeCampaigns] = await Promise.all([
+    fetchLatestSubscriptionForCurrentClient(),
     fetchPublished("reports", "report_date", { limit: 1 }),
     fetchPublished("campaigns", "created_at", { limit: 1 }),
     fetchPublished("client_notes", "note_date", { limit: 1 }),
@@ -59,7 +78,6 @@ export async function getHomeSummary() {
     fetchPublished("campaigns", "created_at"),
   ]);
 
-  const sub = subs[0];
   const report = lastReports[0];
   const campaign = lastCampaigns[0];
   const note = lastNotes[0];
@@ -68,10 +86,10 @@ export async function getHomeSummary() {
   return {
     subscription: sub
       ? {
-          planName: sub.plan_name || "—",
-          status: sub.status || "—",
-          renewsAt: sub.renews_at ? formatDate(sub.renews_at) : "غير محدد",
-          daysLeft: sub.renews_at ? Math.max(0, Math.ceil((new Date(sub.renews_at) - new Date()) / 86400000)) : null,
+          planName: sub.package_name || "—",
+          status: subscriptionStatusLabel(sub.status),
+          renewsAt: sub.end_date ? formatDate(sub.end_date) : sub.status === "pending" ? "قيد المراجعة" : "غير محدد",
+          daysLeft: sub.status === "active" && sub.end_date ? Math.max(0, Math.ceil((new Date(sub.end_date) - new Date()) / 86400000)) : null,
         }
       : { planName: "لا يوجد اشتراك مفعّل بعد", status: "—", renewsAt: "—", daysLeft: null },
     lastReport: report

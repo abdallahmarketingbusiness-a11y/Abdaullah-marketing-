@@ -11,6 +11,7 @@ import {
   setSubscriptionStatus,
   deleteSubscription,
   expireOverdueSubscriptions,
+  createManualSubscription,
   fetchCouponsForAdmin,
   createCoupon,
   updateCoupon,
@@ -18,6 +19,17 @@ import {
   deleteCoupon,
 } from "../services/subscriptionAdminService";
 import { subscriptionStatusLabel } from "../services/subscriptionService";
+import { fetchAllClientsForAdmin } from "../services/clientAuthService";
+import { fetchAllPackagesForAdmin } from "../services/packagesService";
+
+// نفس أسعار باقات "اختار الباقة اللي تناسبك" في الصفحة الرئيسية (app/page.jsx
+// → PricingSection) — لو الأسعار اتغيّرت هناك لازم تتحدّث هنا كمان.
+const READY_TIERS = [
+  { tier: "الأساسية", price: 1800 },
+  { tier: "المتقدمة", price: 2800 },
+  { tier: "الاحترافية", price: 4500 },
+  { tier: "الشاملة", price: 6500 },
+];
 
 const fieldStyle = {
   width: "100%",
@@ -99,6 +111,278 @@ function ActivateModal({ sub, onClose, onDone }) {
 }
 
 // ============================================================================
+// مودال "إضافة اشتراك يدوي" — الأدمن يربط عميل بباقة مباشرة من غير ما يعدي
+// العميل بخطوات الاشتراك من الموقع. مصدر الباقة: إما باقة جاهزة (بالاسم
+// والسعر الثابت)، أو باقة مخصصة محفوظة فعلاً في كتالوج الباقات (packages) —
+// نفس بيانات "تخصيص الباقة" اللي العميل أو الأدمن عملها من الموقع.
+// ============================================================================
+function AssignSubscriptionModal({ onClose, onDone }) {
+  const [step, setStep] = useState(1); // 1: اختيار عميل, 2: بيانات الاشتراك
+
+  const [clientSearch, setClientSearch] = useState("");
+  const [clients, setClients] = useState([]);
+  const [loadingClients, setLoadingClients] = useState(true);
+  const [client, setClient] = useState(null);
+
+  const [source, setSource] = useState("ready"); // "ready" | "custom"
+  const [readyTier, setReadyTier] = useState(READY_TIERS[0].tier);
+
+  const [customSearch, setCustomSearch] = useState("");
+  const [customPackages, setCustomPackages] = useState([]);
+  const [loadingCustom, setLoadingCustom] = useState(false);
+  const [customPkg, setCustomPkg] = useState(null);
+
+  const [businessName, setBusinessName] = useState("");
+  const [finalPrice, setFinalPrice] = useState(READY_TIERS[0].price);
+  const [status, setStatus] = useState("active");
+  const [durationDays, setDurationDays] = useState(30);
+  const [adminNote, setAdminNote] = useState("");
+
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setLoadingClients(true);
+    const t = setTimeout(() => {
+      fetchAllClientsForAdmin({ search: clientSearch })
+        .then(setClients)
+        .catch(() => setClients([]))
+        .finally(() => setLoadingClients(false));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [clientSearch]);
+
+  useEffect(() => {
+    if (source !== "custom") return;
+    setLoadingCustom(true);
+    fetchAllPackagesForAdmin()
+      .then(setCustomPackages)
+      .catch(() => setCustomPackages([]))
+      .finally(() => setLoadingCustom(false));
+  }, [source]);
+
+  function pickClient(c) {
+    setClient(c);
+    setBusinessName(c.business_name || "");
+    setStep(2);
+  }
+
+  function pickReadyTier(tier) {
+    const t = READY_TIERS.find((x) => x.tier === tier);
+    setReadyTier(tier);
+    setFinalPrice(t?.price || 0);
+  }
+
+  function pickCustomPkg(p) {
+    setCustomPkg(p);
+    setFinalPrice(Number(p.final_price || 0));
+    if (p.business_name) setBusinessName(p.business_name);
+  }
+
+  const visibleCustomPackages = customSearch.trim()
+    ? customPackages.filter((p) =>
+        `${p.package_name} ${p.business_name}`.toLowerCase().includes(customSearch.trim().toLowerCase())
+      )
+    : customPackages;
+
+  async function handleSave() {
+    setError("");
+    const packageName = source === "ready" ? `باقة ${readyTier}` : customPkg?.package_name;
+    if (source === "custom" && !customPkg) {
+      setError("اختار باقة مخصصة محفوظة الأول.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const created = await createManualSubscription({
+        clientId: client.user_id,
+        packageId: source === "custom" ? customPkg.id : null,
+        packageName,
+        businessName,
+        basePrice: finalPrice,
+        finalPrice,
+        status,
+        durationDays: Number(durationDays) || 30,
+        adminNote,
+      });
+      onDone(created);
+    } catch (e) {
+      setError(e.message || "حصل خطأ أثناء إضافة الاشتراك.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.78)", zIndex: 200, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 20, overflowY: "auto" }}>
+      <div dir="rtl" style={{ width: "100%", maxWidth: 560, background: "#0c0c0c", border: "1px solid rgba(201,150,58,0.3)", borderRadius: 18, padding: 24, marginTop: 30, marginBottom: 30 }}>
+        <h3 style={{ fontFamily: FONT, color: "#fff", fontWeight: 900, marginBottom: 6, fontSize: 18 }}>➕ إضافة اشتراك يدوي</h3>
+        <p style={{ color: "#888", fontSize: 12.5, marginBottom: 18 }}>
+          {step === 1 ? "اختار العميل الأول" : `العميل: ${client?.full_name || client?.business_name || "—"}`}
+        </p>
+
+        {step === 1 ? (
+          <>
+            <input
+              placeholder="🔍 بحث بالاسم أو النشاط أو الهاتف..."
+              value={clientSearch}
+              onChange={(e) => setClientSearch(e.target.value)}
+              style={{ ...fieldStyle, marginBottom: 12 }}
+            />
+            {loadingClients ? (
+              <p style={{ color: "#888", fontSize: 12.5 }}>جاري التحميل...</p>
+            ) : clients.length === 0 ? (
+              <p style={{ color: "#888", fontSize: 12.5 }}>لا يوجد عملاء مطابقين.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 360, overflowY: "auto" }}>
+                {clients.map((c) => (
+                  <button
+                    key={c.user_id}
+                    onClick={() => pickClient(c)}
+                    style={{
+                      textAlign: "right", padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+                      border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)",
+                    }}
+                  >
+                    <div style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{c.full_name || "بدون اسم"}</div>
+                    <div style={{ color: "#888", fontSize: 11, marginTop: 2 }}>{c.business_name || "—"} {c.phone ? `· ${c.phone}` : ""}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button onClick={onClose} style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "1px solid #333", background: "none", color: "#aaa", cursor: "pointer" }}>
+                إلغاء
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              style={{ background: "none", border: "none", color: "#888", fontSize: 12, cursor: "pointer", marginBottom: 14, padding: 0 }}
+            >
+              → تغيير العميل
+            </button>
+
+            <label style={{ display: "block", fontSize: 12.5, color: "#aaa", marginBottom: 8, fontWeight: 700 }}>مصدر الباقة</label>
+            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+              <button
+                type="button"
+                onClick={() => setSource("ready")}
+                style={{
+                  flex: 1, padding: "9px 0", borderRadius: 10, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+                  border: `1px solid ${source === "ready" ? GOLD : "rgba(255,255,255,0.1)"}`,
+                  background: source === "ready" ? "rgba(201,150,58,0.12)" : "none",
+                  color: source === "ready" ? GOLD3 : "#aaa",
+                }}
+              >
+                📦 باقة جاهزة
+              </button>
+              <button
+                type="button"
+                onClick={() => setSource("custom")}
+                style={{
+                  flex: 1, padding: "9px 0", borderRadius: 10, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+                  border: `1px solid ${source === "custom" ? GOLD : "rgba(255,255,255,0.1)"}`,
+                  background: source === "custom" ? "rgba(201,150,58,0.12)" : "none",
+                  color: source === "custom" ? GOLD3 : "#aaa",
+                }}
+              >
+                🎨 باقة مخصصة محفوظة
+              </button>
+            </div>
+
+            {source === "ready" ? (
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 12.5, color: "#aaa", marginBottom: 6, fontWeight: 700 }}>اختار الباقة</label>
+                <select value={readyTier} onChange={(e) => pickReadyTier(e.target.value)} style={fieldStyle}>
+                  {READY_TIERS.map((t) => (
+                    <option key={t.tier} value={t.tier}>باقة {t.tier} — {t.price.toLocaleString()} ج.م</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div style={{ marginBottom: 14 }}>
+                <input
+                  placeholder="🔍 بحث باسم الباقة أو النشاط..."
+                  value={customSearch}
+                  onChange={(e) => setCustomSearch(e.target.value)}
+                  style={{ ...fieldStyle, marginBottom: 8 }}
+                />
+                {loadingCustom ? (
+                  <p style={{ color: "#888", fontSize: 12.5 }}>جاري التحميل...</p>
+                ) : visibleCustomPackages.length === 0 ? (
+                  <p style={{ color: "#888", fontSize: 12.5 }}>لا توجد باقات مخصصة مطابقة.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflowY: "auto" }}>
+                    {visibleCustomPackages.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => pickCustomPkg(p)}
+                        style={{
+                          textAlign: "right", padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+                          border: `1px solid ${customPkg?.id === p.id ? GOLD : "rgba(255,255,255,0.08)"}`,
+                          background: customPkg?.id === p.id ? "rgba(201,150,58,0.1)" : "rgba(255,255,255,0.02)",
+                        }}
+                      >
+                        <div style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>📦 {p.package_name}</div>
+                        <div style={{ color: "#888", fontSize: 11, marginTop: 2 }}>
+                          {p.business_name || "—"} · {Number(p.final_price || 0).toLocaleString()} ج.م
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <label style={{ display: "block", fontSize: 12.5, color: "#aaa", marginBottom: 6, fontWeight: 700 }}>اسم النشاط</label>
+            <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} style={{ ...fieldStyle, marginBottom: 12 }} />
+
+            <label style={{ display: "block", fontSize: 12.5, color: "#aaa", marginBottom: 6, fontWeight: 700 }}>السعر النهائي (ج.م)</label>
+            <input type="number" value={finalPrice} onChange={(e) => setFinalPrice(e.target.value)} style={{ ...fieldStyle, marginBottom: 12 }} />
+
+            <label style={{ display: "block", fontSize: 12.5, color: "#aaa", marginBottom: 6, fontWeight: 700 }}>الحالة</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ ...fieldStyle, marginBottom: 12 }}>
+              <option value="active">نشط (يتفعّل فورًا)</option>
+              <option value="pending">قيد المراجعة</option>
+            </select>
+
+            {status === "active" && (
+              <>
+                <label style={{ display: "block", fontSize: 12.5, color: "#aaa", marginBottom: 6, fontWeight: 700 }}>مدة الاشتراك (بالأيام)</label>
+                <input type="number" min={1} value={durationDays} onChange={(e) => setDurationDays(e.target.value)} style={{ ...fieldStyle, marginBottom: 12 }} />
+              </>
+            )}
+
+            <label style={{ display: "block", fontSize: 12.5, color: "#aaa", marginBottom: 6, fontWeight: 700 }}>ملاحظة الأدمن (اختياري)</label>
+            <textarea rows={2} value={adminNote} onChange={(e) => setAdminNote(e.target.value)} style={{ ...fieldStyle, resize: "vertical", marginBottom: 6 }} />
+
+            {error && <p style={{ color: "#ff8080", fontSize: 12, marginTop: 8 }}>{error}</p>}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button onClick={onClose} style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "1px solid #333", background: "none", color: "#aaa", cursor: "pointer" }}>
+                إلغاء
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "none", fontWeight: 800, color: "#000", background: `linear-gradient(135deg,${GOLD},${GOLD2})`, cursor: saving ? "not-allowed" : "pointer" }}
+              >
+                {saving ? "جاري الحفظ..." : "إضافة الاشتراك"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // جدول الاشتراكات
 // ============================================================================
 function SubscriptionsTable() {
@@ -106,6 +390,7 @@ function SubscriptionsTable() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("pending");
   const [activating, setActivating] = useState(null);
+  const [assigning, setAssigning] = useState(false);
   const [flash, setFlash] = useState("");
 
   async function load() {
@@ -163,8 +448,14 @@ function SubscriptionsTable() {
           </button>
         ))}
         <button
+          onClick={() => setAssigning(true)}
+          style={{ marginRight: "auto", padding: "7px 14px", borderRadius: 9, cursor: "pointer", fontSize: 12.5, fontWeight: 800, border: `1px solid ${GOLD}`, background: "rgba(201,150,58,0.12)", color: GOLD3 }}
+        >
+          ➕ إضافة اشتراك يدوي
+        </button>
+        <button
           onClick={handleExpireOverdue}
-          style={{ marginRight: "auto", padding: "7px 14px", borderRadius: 9, cursor: "pointer", fontSize: 12, fontWeight: 700, border: "1px solid rgba(255,255,255,0.15)", background: "none", color: "#aaa" }}
+          style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", fontSize: 12, fontWeight: 700, border: "1px solid rgba(255,255,255,0.15)", background: "none", color: "#aaa" }}
         >
           ⏳ تحديث الاشتراكات المنتهية
         </button>
@@ -226,6 +517,21 @@ function SubscriptionsTable() {
             setItems((list) => list.map((s) => (s.id === updated.id ? updated : s)));
             setActivating(null);
             notify("✅ تم تفعيل الاشتراك");
+          }}
+        />
+      )}
+
+      {assigning && (
+        <AssignSubscriptionModal
+          onClose={() => setAssigning(false)}
+          onDone={(created) => {
+            setAssigning(false);
+            notify("✅ تم إضافة الاشتراك للعميل");
+            if (statusFilter === "all" || statusFilter === created.status) {
+              setItems((list) => [created, ...list]);
+            } else {
+              setStatusFilter(created.status);
+            }
           }}
         />
       )}

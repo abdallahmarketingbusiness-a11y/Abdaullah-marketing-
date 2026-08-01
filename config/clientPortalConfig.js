@@ -8,23 +8,13 @@
 // عشان تضيف قسم جديد لاحقًا: ضيف تعريف هنا + الجدول المقابل في SQL، خلاص كل
 // حاجة تانية (فورم الأدمن، القائمة) بتتولد تلقائيًا.
 
+// ملحوظة: قسم "حالة الاشتراك" اتشال من هنا عمدًا — بقى بيتغذّى مباشرة من
+// جدول package_subscriptions الحقيقي (نفس نظام "الاشتراكات" في السوبر أدمن)
+// بدل جدول client_subscriptions المنفصل القديم. إدارته بقت من تبويب
+// "الاشتراكات" فقط (components/SubscriptionsManager.jsx) — شوف
+// createManualSubscription في services/subscriptionAdminService.js لإضافة
+// اشتراك يدوي لعميل من هناك.
 export const PORTAL_SECTIONS = [
-  {
-    key: "subscription",
-    label: "حالة الاشتراك",
-    icon: "💳",
-    table: "client_subscriptions",
-    dateField: "created_at",
-    titleField: "plan_name",
-    fields: [
-      { key: "plan_name", label: "اسم الباقة", type: "text", default: "" },
-      {
-        key: "status", label: "الحالة", type: "select", default: "نشط",
-        options: ["نشط", "متوقف مؤقتًا", "منتهي"],
-      },
-      { key: "renews_at", label: "تاريخ التجديد القادم", type: "date", default: "" },
-    ],
-  },
   {
     key: "performance",
     label: "مؤشرات الأداء",

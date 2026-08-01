@@ -92,6 +92,54 @@ export async function expireOverdueSubscriptions() {
   return (data || []).length;
 }
 
+// إضافة اشتراك يدوي لعميل من لوحة السوبر أدمن مباشرة (بدون ما يمر العميل
+// بخطوات الاشتراك من الموقع). بيُستخدم لما الأدمن يحب يربط عميل بباقة —
+// إما باقة جاهزة (بالاسم والسعر) أو باقة مخصصة محفوظة فعلاً في كتالوج
+// الباقات (packages)، بنفس فكرة "تخصيص الباقة" الموجودة في الموقع.
+// لو status = "active" بيتحدد start_date/end_date تلقائيًا زي activateSubscription.
+export async function createManualSubscription({
+  clientId,
+  packageId = null,
+  packageName,
+  businessName = "",
+  basePrice,
+  finalPrice,
+  status = "active",
+  durationDays = 30,
+  startDate,
+  adminNote = "",
+}) {
+  if (!clientId) throw new Error("لازم تختار عميل الأول.");
+  if (!packageName || !String(packageName).trim()) throw new Error("لازم تحدد اسم الباقة.");
+
+  const isActive = status === "active";
+  const start = isActive ? (startDate || todayISO()) : null;
+  const end = isActive ? addDays(start, durationDays) : null;
+
+  const { data, error } = await supabaseAdmin
+    .from("package_subscriptions")
+    .insert([
+      {
+        client_id: clientId,
+        package_id: packageId || null,
+        package_name: packageName,
+        business_name: businessName || "",
+        base_price: Number(basePrice || 0),
+        final_price: Number(finalPrice ?? basePrice ?? 0),
+        status,
+        duration_days: durationDays,
+        start_date: start,
+        end_date: end,
+        admin_note: adminNote || "",
+      },
+    ])
+    .select()
+    .single();
+  if (error) throw error;
+  await logActivity({ action: "create-manual", entityType: "package_subscriptions", entityId: data.id });
+  return data;
+}
+
 // ============================================================================
 // أكواد الخصم (coupons)
 // ============================================================================
