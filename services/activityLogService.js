@@ -1,5 +1,5 @@
 // src/services/activityLogService.js
-import { supabase } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseAdminClient";
 import { ACTIVITY_LOG_TABLE } from "../config/portfolioConfig";
 import { getCurrentSession } from "./authService";
 
@@ -7,7 +7,7 @@ import { getCurrentSession } from "./authService";
 export async function logActivity({ action, entityType, entityId, details = {} }) {
   try {
     const session = await getCurrentSession();
-    await supabase.from(ACTIVITY_LOG_TABLE).insert([
+    await supabaseAdmin.from(ACTIVITY_LOG_TABLE).insert([
       {
         actor_email: session?.user?.email || null,
         action,
@@ -22,7 +22,7 @@ export async function logActivity({ action, entityType, entityId, details = {} }
 }
 
 export async function fetchActivityLog({ limit = 50 } = {}) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(ACTIVITY_LOG_TABLE)
     .select("*")
     .order("created_at", { ascending: false })

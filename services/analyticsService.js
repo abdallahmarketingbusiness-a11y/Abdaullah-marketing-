@@ -7,6 +7,7 @@
 // قبل الاستخدام لازم تنفّذ sql/migration_analytics.sql في Supabase.
 
 import { supabase } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseAdminClient";
 import { CLIENT_ANALYTICS_TABLE, ANALYTICS_STATUS } from "../config/analyticsConfig";
 import { logActivity } from "./activityLogService";
 import { getCurrentClientSession } from "./clientAuthService";
@@ -40,7 +41,7 @@ function normalizePayload(payload) {
 
 // كل تقارير عميل معيّن (بما فيها المسودات)، الأحدث أولًا
 export async function fetchClientAnalyticsForAdmin(clientId) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(CLIENT_ANALYTICS_TABLE)
     .select("*")
     .eq("client_id", clientId)
@@ -51,7 +52,7 @@ export async function fetchClientAnalyticsForAdmin(clientId) {
 
 export async function createAnalyticsSnapshot(payload) {
   const clean = normalizePayload(payload);
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(CLIENT_ANALYTICS_TABLE)
     .insert([clean])
     .select()
@@ -63,7 +64,7 @@ export async function createAnalyticsSnapshot(payload) {
 
 export async function updateAnalyticsSnapshot(id, payload) {
   const clean = normalizePayload(payload);
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(CLIENT_ANALYTICS_TABLE)
     .update(clean)
     .eq("id", id)
@@ -75,7 +76,7 @@ export async function updateAnalyticsSnapshot(id, payload) {
 }
 
 export async function setAnalyticsStatus(id, status) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(CLIENT_ANALYTICS_TABLE)
     .update({ status })
     .eq("id", id)
@@ -86,7 +87,7 @@ export async function setAnalyticsStatus(id, status) {
 }
 
 export async function deleteAnalyticsSnapshot(id) {
-  const { error } = await supabase.from(CLIENT_ANALYTICS_TABLE).delete().eq("id", id);
+  const { error } = await supabaseAdmin.from(CLIENT_ANALYTICS_TABLE).delete().eq("id", id);
   if (error) throw error;
   await logActivity({ action: "delete", entityType: "client_analytics", entityId: id });
   return true;

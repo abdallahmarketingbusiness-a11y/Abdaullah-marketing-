@@ -1,5 +1,6 @@
 // src/services/aboutService.js
 import { supabase } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseAdminClient";
 import { ABOUT_TABLE, SETTINGS_TABLE, STORAGE_BUCKETS, ANNOUNCEMENTS_TABLE } from "../config/portfolioConfig";
 import { logActivity } from "./activityLogService";
 
@@ -13,7 +14,7 @@ export async function fetchAboutPage() {
 }
 
 export async function updateAboutPage(payload) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(ABOUT_TABLE)
     .update({ ...payload, updated_at: new Date().toISOString() })
     .eq("id", 1)
@@ -27,12 +28,12 @@ export async function updateAboutPage(payload) {
 export async function uploadAboutImage(file) {
   const ext = file.name.split(".").pop();
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(STORAGE_BUCKETS.ABOUT).upload(path, file, {
+  const { error } = await supabaseAdmin.storage.from(STORAGE_BUCKETS.ABOUT).upload(path, file, {
     cacheControl: "3600",
     upsert: false,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from(STORAGE_BUCKETS.ABOUT).getPublicUrl(path);
+  const { data } = supabaseAdmin.storage.from(STORAGE_BUCKETS.ABOUT).getPublicUrl(path);
   return data.publicUrl;
 }
 
@@ -46,7 +47,7 @@ export async function fetchSiteSettings() {
 }
 
 export async function updateSiteSettings(payload) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(SETTINGS_TABLE)
     .update({ ...payload, updated_at: new Date().toISOString() })
     .eq("id", 1)
@@ -60,12 +61,12 @@ export async function updateSiteSettings(payload) {
 export async function uploadSiteLogo(file) {
   const ext = file.name.split(".").pop();
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(STORAGE_BUCKETS.SITE).upload(path, file, {
+  const { error } = await supabaseAdmin.storage.from(STORAGE_BUCKETS.SITE).upload(path, file, {
     cacheControl: "3600",
     upsert: false,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from(STORAGE_BUCKETS.SITE).getPublicUrl(path);
+  const { data } = supabaseAdmin.storage.from(STORAGE_BUCKETS.SITE).getPublicUrl(path);
   return data.publicUrl;
 }
 
@@ -80,11 +81,11 @@ export async function fetchDashboardStats() {
     { data: topViewed },
     { data: topRequested },
   ] = await Promise.all([
-    supabase.from("portfolio_items").select("*", { count: "exact", head: true }),
-    supabase.from("testimonials").select("*", { count: "exact", head: true }),
-    supabase.from("design_requests").select("*", { count: "exact", head: true }),
-    supabase.from("portfolio_items").select("id, title, views_count").order("views_count", { ascending: false }).limit(5),
-    supabase.from("portfolio_items").select("id, title, requests_count").order("requests_count", { ascending: false }).limit(5),
+    supabaseAdmin.from("portfolio_items").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("testimonials").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("design_requests").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("portfolio_items").select("id, title, views_count").order("views_count", { ascending: false }).limit(5),
+    supabaseAdmin.from("portfolio_items").select("id, title, requests_count").order("requests_count", { ascending: false }).limit(5),
   ]);
 
   return {
@@ -106,7 +107,7 @@ export async function fetchAnnouncement() {
 }
 
 export async function updateAnnouncement(payload) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(ANNOUNCEMENTS_TABLE)
     .update({ ...payload, updated_at: new Date().toISOString() })
     .eq("id", 1)

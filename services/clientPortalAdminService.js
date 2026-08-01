@@ -7,7 +7,7 @@
 //
 // قبل الاستخدام لازم تنفّذ sql/migration_client_portal.sql في Supabase.
 
-import { supabase } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseAdminClient";
 import { getSectionConfig } from "../config/clientPortalConfig";
 import { STORAGE_BUCKETS } from "../config/portfolioConfig";
 import { logActivity } from "./activityLogService";
@@ -35,12 +35,12 @@ function guessFileType(name) {
 export async function uploadClientFile(file) {
   const ext = file.name.split(".").pop();
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(STORAGE_BUCKETS.CLIENT_FILES).upload(path, file, {
+  const { error } = await supabaseAdmin.storage.from(STORAGE_BUCKETS.CLIENT_FILES).upload(path, file, {
     cacheControl: "3600",
     upsert: false,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from(STORAGE_BUCKETS.CLIENT_FILES).getPublicUrl(path);
+  const { data } = supabaseAdmin.storage.from(STORAGE_BUCKETS.CLIENT_FILES).getPublicUrl(path);
   return { url: data.publicUrl, sizeLabel: formatBytes(file.size), guessedType: guessFileType(file.name) };
 }
 
@@ -62,7 +62,7 @@ function cleanRow(sectionKey, payload) {
 export async function fetchSectionRowsForAdmin(sectionKey, clientId) {
   const section = getSectionConfig(sectionKey);
   if (!section) throw new Error(`قسم غير معروف: ${sectionKey}`);
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(section.table)
     .select("*")
     .eq("client_id", clientId)
@@ -74,7 +74,7 @@ export async function fetchSectionRowsForAdmin(sectionKey, clientId) {
 export async function createSectionRow(sectionKey, clientId, payload) {
   const section = getSectionConfig(sectionKey);
   const clean = { ...cleanRow(sectionKey, payload), client_id: clientId };
-  const { data, error } = await supabase.from(section.table).insert([clean]).select().single();
+  const { data, error } = await supabaseAdmin.from(section.table).insert([clean]).select().single();
   if (error) throw error;
   await logActivity({ action: "create", entityType: section.table, entityId: data.id });
   return data;
@@ -83,7 +83,7 @@ export async function createSectionRow(sectionKey, clientId, payload) {
 export async function updateSectionRow(sectionKey, id, payload) {
   const section = getSectionConfig(sectionKey);
   const clean = cleanRow(sectionKey, payload);
-  const { data, error } = await supabase.from(section.table).update(clean).eq("id", id).select().single();
+  const { data, error } = await supabaseAdmin.from(section.table).update(clean).eq("id", id).select().single();
   if (error) throw error;
   await logActivity({ action: "update", entityType: section.table, entityId: id });
   return data;
@@ -91,7 +91,7 @@ export async function updateSectionRow(sectionKey, id, payload) {
 
 export async function deleteSectionRow(sectionKey, id) {
   const section = getSectionConfig(sectionKey);
-  const { error } = await supabase.from(section.table).delete().eq("id", id);
+  const { error } = await supabaseAdmin.from(section.table).delete().eq("id", id);
   if (error) throw error;
   await logActivity({ action: "delete", entityType: section.table, entityId: id });
   return true;
@@ -99,7 +99,7 @@ export async function deleteSectionRow(sectionKey, id) {
 
 export async function setSectionRowPublished(sectionKey, id, isPublished) {
   const section = getSectionConfig(sectionKey);
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(section.table)
     .update({ is_published: isPublished })
     .eq("id", id)

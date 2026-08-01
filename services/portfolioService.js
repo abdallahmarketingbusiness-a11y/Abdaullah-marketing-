@@ -1,5 +1,6 @@
 // src/services/portfolioService.js
 import { supabase } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseAdminClient";
 import {
   PORTFOLIO_TABLE,
   PORTFOLIO_IMAGES_TABLE,
@@ -131,7 +132,7 @@ export async function logDesignRequest(portfolioId) {
 // لوحة السوبر أدمن
 // ---------------------------------------------------------------------------
 export async function fetchAllPortfolioItemsForAdmin({ search = "", category = "all" } = {}) {
-  let query = supabase.from(PORTFOLIO_TABLE).select("*");
+  let query = supabaseAdmin.from(PORTFOLIO_TABLE).select("*");
 
   if (search && search.trim()) {
     const term = search.trim();
@@ -149,7 +150,7 @@ export async function fetchAllPortfolioItemsForAdmin({ search = "", category = "
 }
 
 export async function createPortfolioItem(payload) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PORTFOLIO_TABLE)
     .insert([{ ...payload }])
     .select()
@@ -160,7 +161,7 @@ export async function createPortfolioItem(payload) {
 }
 
 export async function updatePortfolioItem(id, payload) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PORTFOLIO_TABLE)
     .update({ ...payload, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -172,7 +173,7 @@ export async function updatePortfolioItem(id, payload) {
 }
 
 export async function setPortfolioStatus(id, status) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PORTFOLIO_TABLE)
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -184,7 +185,7 @@ export async function setPortfolioStatus(id, status) {
 }
 
 export async function setPortfolioFeatured(id, isFeatured) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PORTFOLIO_TABLE)
     .update({ is_featured: isFeatured, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -197,7 +198,7 @@ export async function setPortfolioFeatured(id, isFeatured) {
 // تثبيت منشور: بيلغي تثبيت أي منشور تاني تلقائيًا (منشور واحد ثابت بس في كل مرة)
 export async function setPortfolioPinned(id, isPinned) {
   if (isPinned) {
-    const { error: unpinError } = await supabase
+    const { error: unpinError } = await supabaseAdmin
       .from(PORTFOLIO_TABLE)
       .update({ is_pinned: false })
       .neq("id", id)
@@ -205,7 +206,7 @@ export async function setPortfolioPinned(id, isPinned) {
     if (unpinError) throw unpinError;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PORTFOLIO_TABLE)
     .update({ is_pinned: isPinned, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -217,7 +218,7 @@ export async function setPortfolioPinned(id, isPinned) {
 }
 
 export async function deletePortfolioItem(id) {
-  const { error } = await supabase.from(PORTFOLIO_TABLE).delete().eq("id", id);
+  const { error } = await supabaseAdmin.from(PORTFOLIO_TABLE).delete().eq("id", id);
   if (error) throw error;
   await logActivity({ action: "delete", entityType: "portfolio_items", entityId: id });
   return true;
@@ -225,14 +226,14 @@ export async function deletePortfolioItem(id) {
 
 // حذف/نشر جماعي
 export async function bulkDeletePortfolioItems(ids) {
-  const { error } = await supabase.from(PORTFOLIO_TABLE).delete().in("id", ids);
+  const { error } = await supabaseAdmin.from(PORTFOLIO_TABLE).delete().in("id", ids);
   if (error) throw error;
   await logActivity({ action: "bulk_delete", entityType: "portfolio_items", details: { ids } });
   return true;
 }
 
 export async function bulkSetStatus(ids, status) {
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from(PORTFOLIO_TABLE)
     .update({ status, updated_at: new Date().toISOString() })
     .in("id", ids);
@@ -244,7 +245,7 @@ export async function bulkSetStatus(ids, status) {
 // إعادة الترتيب بالسحب: بتاخد مصفوفة [{id, sort_order}]
 export async function reorderPortfolioItems(orderedList) {
   const updates = orderedList.map(({ id, sort_order }) =>
-    supabase.from(PORTFOLIO_TABLE).update({ sort_order }).eq("id", id)
+    supabaseAdmin.from(PORTFOLIO_TABLE).update({ sort_order }).eq("id", id)
   );
   const results = await Promise.all(updates);
   const failed = results.find((r) => r.error);
@@ -274,7 +275,7 @@ export async function duplicatePortfolioItem(id) {
       image_url: img.image_url,
       sort_order: img.sort_order,
     }));
-    await supabase.from(PORTFOLIO_IMAGES_TABLE).insert(rows);
+    await supabaseAdmin.from(PORTFOLIO_IMAGES_TABLE).insert(rows);
   }
 
   return copy;
@@ -284,7 +285,7 @@ export async function duplicatePortfolioItem(id) {
 // صور المعرض الإضافية
 // ---------------------------------------------------------------------------
 export async function addPortfolioImage(portfolioId, imageUrl, sortOrder = 0) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PORTFOLIO_IMAGES_TABLE)
     .insert([{ portfolio_id: portfolioId, image_url: imageUrl, sort_order: sortOrder }])
     .select()
@@ -294,7 +295,7 @@ export async function addPortfolioImage(portfolioId, imageUrl, sortOrder = 0) {
 }
 
 export async function deletePortfolioImage(imageId) {
-  const { error } = await supabase.from(PORTFOLIO_IMAGES_TABLE).delete().eq("id", imageId);
+  const { error } = await supabaseAdmin.from(PORTFOLIO_IMAGES_TABLE).delete().eq("id", imageId);
   if (error) throw error;
   return true;
 }
@@ -303,7 +304,7 @@ export async function deletePortfolioImage(imageId) {
 // ملفات المصدر الداخلية (PSD / AI / PDF)
 // ---------------------------------------------------------------------------
 export async function fetchPortfolioSourceFiles(portfolioId) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PORTFOLIO_SOURCE_FILES_TABLE)
     .select("*")
     .eq("portfolio_id", portfolioId)
@@ -313,7 +314,7 @@ export async function fetchPortfolioSourceFiles(portfolioId) {
 }
 
 export async function addPortfolioSourceFile(portfolioId, fileUrl, fileName) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PORTFOLIO_SOURCE_FILES_TABLE)
     .insert([{ portfolio_id: portfolioId, file_url: fileUrl, file_name: fileName }])
     .select()
@@ -323,7 +324,7 @@ export async function addPortfolioSourceFile(portfolioId, fileUrl, fileName) {
 }
 
 export async function deletePortfolioSourceFile(fileId) {
-  const { error } = await supabase.from(PORTFOLIO_SOURCE_FILES_TABLE).delete().eq("id", fileId);
+  const { error } = await supabaseAdmin.from(PORTFOLIO_SOURCE_FILES_TABLE).delete().eq("id", fileId);
   if (error) throw error;
   return true;
 }
@@ -334,18 +335,18 @@ export async function deletePortfolioSourceFile(fileId) {
 export async function uploadPortfolioImage(file, { bucket = STORAGE_BUCKETS.PORTFOLIO } = {}) {
   const ext = file.name.split(".").pop();
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(bucket).upload(path, file, {
+  const { error } = await supabaseAdmin.storage.from(bucket).upload(path, file, {
     cacheControl: "3600",
     upsert: false,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
 
 export async function uploadPortfolioSourceFile(file) {
   const path = `${crypto.randomUUID()}_${file.name}`;
-  const { error } = await supabase.storage
+  const { error } = await supabaseAdmin.storage
     .from(STORAGE_BUCKETS.PORTFOLIO_SOURCES)
     .upload(path, file, { cacheControl: "3600", upsert: false });
   if (error) throw error;

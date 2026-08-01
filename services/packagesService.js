@@ -1,5 +1,6 @@
 // src/services/packagesService.js
 import { supabase } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseAdminClient";
 import { PACKAGES_TABLE, GALLERY, PACKAGE_STATUS } from "../config/packagesConfig";
 import { validatePackagePayload } from "./validation";
 
@@ -105,7 +106,7 @@ export async function updatePackage(id, payload) {
     throw new Error(result.error);
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PACKAGES_TABLE)
     .update({ ...result.value, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -118,7 +119,7 @@ export async function updatePackage(id, payload) {
 
 // تغيير الحالة فقط (إظهار/إخفاء/تثبيت كمميزة) - أدمن فقط
 export async function setPackageStatus(id, status) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PACKAGES_TABLE)
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -129,14 +130,14 @@ export async function setPackageStatus(id, status) {
 }
 
 export async function deletePackage(id) {
-  const { error } = await supabase.from(PACKAGES_TABLE).delete().eq("id", id);
+  const { error } = await supabaseAdmin.from(PACKAGES_TABLE).delete().eq("id", id);
   if (error) throw error;
   return true;
 }
 
 // جلب كل الباقات للوحة تحكم الأدمن (بدون فلترة visible/hidden، الـ RLS بتسمح له يشوف الكل)
 export async function fetchAllPackagesForAdmin() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from(PACKAGES_TABLE)
     .select("*")
     .order("status", { ascending: false })
