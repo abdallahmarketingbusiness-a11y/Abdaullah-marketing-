@@ -33,6 +33,7 @@ const ClientSignup = dynamic(() => import("../components/ClientSignup"));
 const ClientForgotPassword = dynamic(() => import("../components/ClientForgotPassword"));
 const ClientResetPassword = dynamic(() => import("../components/ClientResetPassword"));
 const ClientDashboard = dynamic(() => import("../components/ClientDashboard"));
+const SubscribeModal = dynamic(() => import("../components/SubscribeModal"));
 
 const GOLD = "#C9963A";
 const GOLD2 = "#E8BE6A";
@@ -681,6 +682,8 @@ function BuilderPage({ setPage, initialData }) {
   const [clientNotes, setClientNotes] = useState("");
   const [saveToast, setSaveToast] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [sendingRequest, setSendingRequest] = useState(false);
+  const [subscribePkg, setSubscribePkg] = useState(null);
 
   // package customization counters (absolute counts, base comes from package)
   const [posts, setPosts] = useState(0);
@@ -765,6 +768,42 @@ function BuilderPage({ setPage, initialData }) {
     }
   }
 
+  // إرسال الطلب: بيحفظ الباقة المخصصة (نفس منطق "حفظ الباقة") وبعدين يفتح
+  // مودال الاشتراك (تسجيل دخول/حساب لو لازم) — عشان يتسجّل طلب اشتراك حقيقي
+  // بحالة "قيد المراجعة" في لوحة السوبر أدمن (تبويب "الاشتراكات")، مش مجرد
+  // رسالة واتساب عادية من غير أي أثر في النظام.
+  async function handleSendRequest() {
+    if (!pkg || sendingRequest) return;
+    setSendingRequest(true);
+    setSaveToast(null);
+    try {
+      const saved = await createPackage({
+        business_name: businessName,
+        business_type: businessType,
+        package_name: savedName || projectName || `باقة ${pkg.tier}`,
+        base_package_id: pkg.id,
+        base_package_tier: pkg.tier,
+        posts_count: posts,
+        stories_count: stories,
+        reels_count: reels,
+        scripts_count: scripts,
+        base_price: pkg.price || 0,
+        extras_price: packageAddonsTotal + extrasTotal,
+        final_price: totalPrice,
+        client_notes: clientNotes,
+        builder_state: {
+          pkgId, websites, identityOn, platforms, logo, brand,
+          socialPages, aiVideo, ads, extraScripts, extraContent,
+        },
+      });
+      setSubscribePkg(saved);
+    } catch (e) {
+      setSaveToast({ type: "error", text: e.message || "تعذّر إرسال الطلب، حاول تاني." });
+    } finally {
+      setSendingRequest(false);
+    }
+  }
+
   function selectPackage(p) {
     setPkgId(p.id);
     setPosts(p.base.posts);
@@ -828,53 +867,7 @@ function BuilderPage({ setPage, initialData }) {
   const totalPrice = (pkg?.price || 0) + packageAddonsTotal + extrasTotal;
   const animatedTotal = useCountUp(totalPrice);
 
-  // ---- WhatsApp message ----
-  function buildWhatsAppLink() {
-    const lines = [];
-    lines.push("السلام عليكم.");
-    lines.push("أرغب في تنفيذ الباقة التالية.");
-    lines.push("");
-    lines.push("اسم المشروع:");
-    lines.push(savedName || projectName || "—");
-    lines.push("");
-    lines.push("اسم الباقة:");
-    lines.push(pkg ? `باقة ${pkg.tier}` : "—");
-    lines.push("");
-    lines.push("الخدمات:");
-    if (pkg) {
-      lines.push(`✓ ${posts} بوست`);
-      lines.push(`✓ ${stories} ستوري`);
-      if (reels > 0) lines.push(`✓ ${reels} ريلز`);
-      if (scripts > 0) lines.push(`✓ ${scripts} سكربت`);
-    }
-    WEBSITE_OPTIONS.forEach((w) => {
-      if (websites[w.key]?.on) lines.push(`✓ ${w.label}`);
-    });
-    if (identityOn) {
-      const chosenPlatforms = Object.keys(platforms);
-      if (chosenPlatforms.length || logo.on || brand.on) lines.push("✓ هوية بصرية:");
-      chosenPlatforms.forEach((name) => lines.push(`   - ${name} (${platforms[name]} تصميم)`));
-      if (logo.on) lines.push("   - تصميم Logo");
-      if (brand.on) lines.push("   - Brand Identity كاملة");
-    }
-    SOCIAL_PAGE_OPTIONS.forEach((s) => {
-      if (socialPages[s.key]) lines.push(`✓ ${s.label}`);
-    });
-    if (aiVideo.on) lines.push(`✓ فيديو AI (${aiVideoTier?.label}) × ${aiVideo.qty}`);
-    ADS_OPTIONS.forEach((a) => {
-      if (ads[a.key]) lines.push(`✓ ${a.label}`);
-    });
-    if (extraScripts > 0) lines.push(`✓ ${extraScripts} سكربت إضافي`);
-    if (extraContent > 0) lines.push(`✓ ${extraContent} محتوى مكتوب إضافي`);
-    lines.push("");
-    lines.push("السعر النهائي:");
-    lines.push(`${totalPrice.toLocaleString()} جنيه مصري`);
-    lines.push("");
-    lines.push("الرجاء التواصل معي.");
-    return `https://wa.me/201069032563?text=${encodeURIComponent(lines.join("\n"))}`;
-  }
 
-  return (
     <div dir="rtl" style={{ background: "#060606", minHeight: "100vh", paddingTop: 110, paddingBottom: 60 }}>
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ===== Main column ===== */}
@@ -1155,26 +1148,36 @@ function BuilderPage({ setPage, initialData }) {
               {saving ? "جاري الحفظ..." : "💾 حفظ الباقة"}
             </button>
 
-            <a
-              href={pkg ? buildWhatsAppLink() : undefined}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => { if (!pkg) e.preventDefault(); }}
+            <button
+              type="button"
+              onClick={handleSendRequest}
+              disabled={!pkg || sendingRequest}
               style={{
-                display: "block", textAlign: "center", marginTop: 10, padding: "14px 0", borderRadius: 14,
-                fontWeight: 900, fontSize: 15, textDecoration: "none",
+                display: "block", width: "100%", textAlign: "center", marginTop: 10, padding: "14px 0", borderRadius: 14,
+                fontWeight: 900, fontSize: 15, textDecoration: "none", border: "none",
                 background: pkg ? `linear-gradient(135deg,${GOLD},${GOLD2})` : "rgba(255,255,255,0.06)",
                 color: pkg ? "#000" : "#555",
-                cursor: pkg ? "pointer" : "not-allowed",
+                cursor: pkg && !sendingRequest ? "pointer" : "not-allowed",
                 boxShadow: pkg ? "0 8px 28px rgba(201,150,58,0.35)" : "none",
               }}
             >
-              🚀 إرسال الطلب
-            </a>
+              {sendingRequest ? "جاري الإرسال..." : "🚀 إرسال الطلب"}
+            </button>
+            <p style={{ color: "#777", fontSize: 11, marginTop: 10, textAlign: "center", lineHeight: 1.7 }}>
+              هيتسجّل طلبك بحالة "قيد المراجعة" وهيتفتح واتساب تلقائيًا بتفاصيل باقتك.
+            </p>
           </div>
         </div>
       </div>
       <Toast toast={saveToast} onClose={() => setSaveToast(null)} />
+
+      {subscribePkg && (
+        <SubscribeModal
+          pkg={subscribePkg}
+          onClose={() => setSubscribePkg(null)}
+          onSubscribed={() => { window.location.hash = "#dashboard"; }}
+        />
+      )}
     </div>
   );
 }
@@ -1182,6 +1185,7 @@ function BuilderPage({ setPage, initialData }) {
 
 function PricingSection({ setPage }) {
   const [active, setActive] = useState(null);
+  const [subscribingPkg, setSubscribingPkg] = useState(null);
   const WA = WA_LINK;
 
   const packages = [
@@ -1349,13 +1353,19 @@ function PricingSection({ setPage }) {
                   ))}
                 </div>
 
-                <a
-                  href={WA}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSubscribingPkg({
+                      package_name: `باقة ${pkg.tier}`,
+                      business_name: "",
+                      final_price: Number(String(pkg.price).replace(/[^\d.]/g, "")) || 0,
+                    });
+                  }}
                   style={{
                     display: "block",
+                    width: "100%",
                     textAlign: "center",
                     marginTop: 20,
                     padding: "10px 0",
@@ -1367,11 +1377,12 @@ function PricingSection({ setPage }) {
                     color: isFeatured || isActive ? "#000" : pkg.color,
                     border: `1px solid ${pkg.color}55`,
                     letterSpacing: 0.5,
+                    cursor: "pointer",
                     transition: "all 0.25s",
                   }}
                 >
                   تواصل معانا الآن 🚀
-                </a>
+                </button>
               </div>
             );
           })}
@@ -1444,6 +1455,14 @@ function PricingSection({ setPage }) {
           </a>
         </div>
       </div>
+
+      {subscribingPkg && (
+        <SubscribeModal
+          pkg={subscribingPkg}
+          onClose={() => setSubscribingPkg(null)}
+          onSubscribed={() => { window.location.hash = "#dashboard"; }}
+        />
+      )}
     </section>
   );
 }
