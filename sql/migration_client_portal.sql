@@ -213,6 +213,10 @@ end $$;
 -- RLS: نفس نمط client_analytics بالظبط لكل جدول
 -- (العميل يشوف بتاعه المنشور بس، الأدمن يشوف/يضيف/يعدّل/يحذف كل حاجة)
 -- ============================================================================
+-- ============================================================================
+-- RLS: نفس نمط client_analytics بالظبط لكل جدول
+-- (العميل يشوف بتاعه المنشور بس، الأدمن يشوف/يضيف/يعدّل/يحذف كل حاجة)
+-- ============================================================================
 do $$
 declare
   t text;
@@ -240,3 +244,29 @@ begin
     execute format('create policy %s_delete on %I for delete using (is_admin());', t, t);
   end loop;
 end $$;
+
+-- ============================================================================
+-- 10) Storage Bucket لملفات العملاء (رفع حقيقي بدل كتابة رابط يدوي)
+-- ============================================================================
+-- Public زي buckets الصور الموجودة (portfolio/about/site) — القراءة بس محتاجة
+-- تعرف الرابط العشوائي (UUID) اللي مش موجود إلا في صف client_files المحمي
+-- بـ RLS. لو عايز خصوصية أعلى (رابط موقّع مؤقت بدل public) قولّي أظبطها كمان.
+insert into storage.buckets (id, name, public)
+values ('client-files', 'client-files', true)
+on conflict (id) do nothing;
+
+drop policy if exists "client_files_public_read" on storage.objects;
+create policy "client_files_public_read" on storage.objects
+  for select using (bucket_id = 'client-files');
+
+drop policy if exists "client_files_admin_write" on storage.objects;
+create policy "client_files_admin_write" on storage.objects
+  for insert with check (bucket_id = 'client-files' and is_admin());
+
+drop policy if exists "client_files_admin_update" on storage.objects;
+create policy "client_files_admin_update" on storage.objects
+  for update using (bucket_id = 'client-files' and is_admin());
+
+drop policy if exists "client_files_admin_delete" on storage.objects;
+create policy "client_files_admin_delete" on storage.objects
+  for delete using (bucket_id = 'client-files' and is_admin());

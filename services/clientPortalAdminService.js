@@ -9,7 +9,40 @@
 
 import { supabase } from "../lib/supabaseClient";
 import { getSectionConfig } from "../config/clientPortalConfig";
+import { STORAGE_BUCKETS } from "../config/portfolioConfig";
 import { logActivity } from "./activityLogService";
+
+// ----------------------------------------------------------------------------
+// رفع ملف حقيقي لقسم "الملفات" إلى Supabase Storage (bucket: client-files)
+// بيرجع { url, sizeLabel, guessedType } جاهزين للحفظ في صف client_files.
+// ----------------------------------------------------------------------------
+function formatBytes(bytes) {
+  if (!bytes) return "0 KB";
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1) return `${mb.toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function guessFileType(name) {
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  if (ext === "pdf") return "pdf";
+  if (["mp4", "mov", "webm", "avi"].includes(ext)) return "video";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "image";
+  if (["xlsx", "xls", "csv"].includes(ext)) return "sheet";
+  return "default";
+}
+
+export async function uploadClientFile(file) {
+  const ext = file.name.split(".").pop();
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(STORAGE_BUCKETS.CLIENT_FILES).upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from(STORAGE_BUCKETS.CLIENT_FILES).getPublicUrl(path);
+  return { url: data.publicUrl, sizeLabel: formatBytes(file.size), guessedType: guessFileType(file.name) };
+}
 
 function cleanRow(sectionKey, payload) {
   const section = getSectionConfig(sectionKey);

@@ -5,7 +5,7 @@
 // الفواتير / الإشعارات)، وضيف/عدّل/احذف/انشر الصفوف بتاعته. نفس فكرة
 // AnalyticsManager.jsx لكن مبنية بشكل عام (Generic) يشتغل على كل الأقسام.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GOLD, GOLD2, GOLD3, FONT } from "../config/theme";
 import { PORTAL_SECTIONS, emptyFormFromFields } from "../config/clientPortalConfig";
 import { fetchAllClientsForAdmin } from "../services/clientAuthService";
@@ -15,6 +15,7 @@ import {
   updateSectionRow,
   deleteSectionRow,
   setSectionRowPublished,
+  uploadClientFile,
 } from "../services/clientPortalAdminService";
 import Toast from "./Toast";
 
@@ -78,6 +79,57 @@ function FieldInput({ field, value, onChange }) {
   return <input style={fieldStyle} value={value} placeholder={field.placeholder} onChange={(e) => onChange(e.target.value)} />;
 }
 
+function FileUploadField({ form, update }) {
+  const inputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleFile(file) {
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const { url, sizeLabel, guessedType } = await uploadClientFile(file);
+      update("file_url", url);
+      update("size_label", sizeLabel);
+      update("file_type", guessedType);
+      if (!form.name?.trim()) update("name", file.name);
+    } catch (e) {
+      setError(e.message || "فشل رفع الملف. تأكد إنك نفّذت sql/migration_client_portal.sql (وأنشأت bucket باسم client-files).");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={labelStyle}>📤 ارفع الملف مباشرة (اختياري)</label>
+      <div
+        onClick={() => inputRef.current?.click()}
+        style={{
+          border: `2px dashed ${uploading ? GOLD : "rgba(201,150,58,0.35)"}`,
+          borderRadius: 12, padding: "16px 12px", textAlign: "center",
+          cursor: "pointer", background: "rgba(255,255,255,0.02)",
+        }}
+      >
+        <span style={{ color: GOLD3, fontSize: 12.5 }}>
+          {uploading ? "⏳ جاري الرفع..." : form.file_url ? "✅ تم الرفع — اضغط لتغيير الملف" : "اضغط لاختيار ملف من جهازك (PDF, صورة, فيديو, إكسل...)"}
+        </span>
+        <input
+          ref={inputRef}
+          type="file"
+          style={{ display: "none" }}
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+      </div>
+      {error && <p style={{ color: "#ff8080", fontSize: 11.5, marginTop: 6 }}>{error}</p>}
+      <p style={{ color: "#777", fontSize: 11, marginTop: 6 }}>
+        أو سيب الحقول تحت فاضية واكتب رابط جاهز يدويًا في "رابط التحميل".
+      </p>
+    </div>
+  );
+}
+
 function RowFormModal({ section, clientId, item, onClose, onSaved, flash }) {
   const isEdit = !!item;
   const [form, setForm] = useState(() => emptyFormFromFields(section.fields, item || {}));
@@ -109,6 +161,8 @@ function RowFormModal({ section, clientId, item, onClose, onSaved, flash }) {
         <h3 style={{ fontFamily: FONT, color: "#fff", fontWeight: 900, marginBottom: 18, fontSize: 18 }}>
           {isEdit ? `✏️ تعديل — ${section.label}` : `➕ إضافة — ${section.label}`}
         </h3>
+
+        {section.key === "files" && <FileUploadField form={form} update={update} />}
 
         {section.fields.map((f) =>
           f.type === "checkbox" ? (
