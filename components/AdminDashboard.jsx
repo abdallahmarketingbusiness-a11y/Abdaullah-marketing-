@@ -13,8 +13,6 @@ import PortfolioManager from "./PortfolioManager";
 import TestimonialsManager from "./TestimonialsManager";
 import AboutManager from "./AboutManager";
 import AnalyticsManager from "./AnalyticsManager";
-import ClientPortalManager from "./ClientPortalManager";
-import ContentManager from "./ContentManager";
 
 function QuickEditModal({ pkg, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -87,9 +85,7 @@ const TABS = [
   { id: "overview", label: "📊 لوحة القيادة" },
   { id: "packages", label: "🛠️ الباقات" },
   { id: "analytics", label: "📈 تحليلات العملاء" },
-  { id: "portal", label: "🗂️ بيانات لوحة العميل" },
   { id: "portfolio", label: "🖼️ معرض الأعمال" },
-  { id: "content", label: "🗞️ المحتوى (دراسات وحالات ومنشورات ومدونة)" },
   { id: "testimonials", label: "🎓 الشهادات" },
   { id: "about", label: "👤 من نحن والإعدادات" },
 ];
@@ -183,9 +179,7 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
 
         {tab === "overview" && <DashboardOverview />}
         {tab === "analytics" && <AnalyticsManager />}
-        {tab === "portal" && <ClientPortalManager />}
         {tab === "portfolio" && <PortfolioManager />}
-        {tab === "content" && <ContentManager />}
         {tab === "testimonials" && <TestimonialsManager />}
         {tab === "about" && <AboutManager />}
 

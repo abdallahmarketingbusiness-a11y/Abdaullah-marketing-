@@ -1,6 +1,5 @@
 // src/components/TestimonialsSection.jsx
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { GOLD, GOLD3, FONT } from "../config/theme";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
 
@@ -26,19 +25,12 @@ export default function TestimonialsSection() {
             style={{ borderRadius: 16, border: "1px solid rgba(201,150,58,0.2)", background: "rgba(255,255,255,0.02)", padding: 16 }}
           >
             {t.image_url && (
-              <div
+              <img
+                src={t.image_url}
+                alt={t.certificate_name}
                 onClick={() => setZoomed(t)}
-                style={{ position: "relative", width: "100%", height: 140, borderRadius: 10, marginBottom: 10, cursor: "zoom-in", overflow: "hidden" }}
-              >
-                <Image
-                  src={t.image_url}
-                  alt={t.certificate_name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  loading="lazy"
-                  style={{ objectFit: "cover" }}
-                />
-              </div>
+                style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 10, marginBottom: 10, cursor: "zoom-in" }}
+              />
             )}
             <h4 style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{t.certificate_name}</h4>
             <p style={{ color: "#888", fontSize: 12.5, margin: "4px 0" }}>{t.issuer}{t.issue_date ? ` · ${t.issue_date}` : ""}</p>
@@ -56,9 +48,7 @@ export default function TestimonialsSection() {
           onClick={() => setZoomed(null)}
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
         >
-          <div style={{ position: "relative", width: "min(90vw, 700px)", height: "90vh" }}>
-            <Image src={zoomed.image_url} alt={zoomed.certificate_name} fill sizes="90vw" style={{ objectFit: "contain", borderRadius: 12 }} />
-          </div>
+          <img src={zoomed.image_url} alt={zoomed.certificate_name} style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: 12 }} />
         </div>
       )}
     </div>

@@ -1,6 +1,5 @@
 // src/components/PortfolioManager.jsx
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import { GOLD, GOLD2, GOLD3, FONT } from "../config/theme";
 import { PORTFOLIO_STATUS, DEFAULT_CATEGORIES } from "../config/portfolioConfig";
 import {
@@ -235,9 +234,6 @@ function PortfolioFormModal({ item, categories, onClose, onSaved, flash }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 10 }}>
           {gallery.map((g, idx) => (
             <div key={idx} style={{ position: "relative", height: 70, borderRadius: 8, overflow: "hidden" }}>
-              {/* ملاحظة: <img> عادي مقصود هنا (مش next/image) لأن g.image_url ممكن يكون
-                  blob: URL مؤقت (معاينة صورة قبل الرفع عبر URL.createObjectURL) —
-                  next/image optimizer مش بيقدر يوصل لـ blob URLs المحلية. */}
               <img src={g.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               <button
                 onClick={() => handleRemoveGalleryImage(g, idx)}
@@ -481,9 +477,7 @@ export default function PortfolioManager() {
               <div style={{ display: "flex", gap: 10 }}>
                 <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} style={{ marginTop: 4 }} />
                 {item.main_image_url && (
-                  <div style={{ position: "relative", width: 56, height: 56, borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
-                    <Image src={item.main_image_url} alt="" fill sizes="56px" style={{ objectFit: "cover" }} />
-                  </div>
+                  <img src={item.main_image_url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover" }} />
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>

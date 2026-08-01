@@ -1,100 +1,61 @@
 // src/services/clientPortalService.js
 //
-// طبقة بيانات لوحة تحكم العميل — بيانات حقيقية بالكامل من Supabase.
-// كل دالة هنا بتقرأ من جدول حقيقي (شوف sql/migration_client_portal.sql) وترجع
-// بس الصفوف "المنشورة" (is_published = true) الخاصة بالعميل الحالي — نفس
-// الشكل بالظبط اللي كانت بترجعه البيانات التجريبية القديمة، عشان
-// components/ClientDashboard.jsx يفضل شغال من غير أي تعديل في العرض.
+// طبقة بيانات لوحة تحكم العميل الاحترافية.
+// كل دالة هنا بترجع Promise (بنفس شكل استدعاء Supabase الحقيقي) عشان لما نضيف
+// الجداول الفعلية في قاعدة البيانات، التعديل يبقى في الملف ده بس من غير ما نلمس
+// أي حاجة في components/ClientDashboard.jsx.
 //
-// الإضافة/التعديل/الحذف بيتم من لوحة السوبر أدمن (تبويب "بيانات لوحة العميل")
-// عن طريق services/clientPortalAdminService.js.
+// == للربط ببيانات حقيقية لاحقًا ==
+// كل دالة تحت متعلّق بجدول مستقبلي مقترح (مكتوب في التعليق فوقها). لما الجدول يتعمل:
+// 1) استبدل الـ mock array/object بنداء supabase.from("اسم_الجدول").select(...).eq("client_id", clientId)
+// 2) سيب توقيع الدالة (الاسم والمخرجات) زي ما هو عشان الواجهة تفضل شغالة من غير تعديل.
 
-import { supabase } from "../lib/supabaseClient";
-import { getCurrentClientSession } from "./clientAuthService";
 import { fetchPublishedAnalyticsForCurrentClient } from "./analyticsService";
 
-function money(n) {
-  return `${Number(n || 0).toLocaleString("en-US")} ج.م`;
-}
-
-function formatDate(d) {
-  if (!d) return "";
-  try {
-    return new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "2-digit" });
-  } catch {
-    return d;
-  }
-}
-
-async function currentClientId() {
-  const session = await getCurrentClientSession();
-  return session?.user?.id || null;
-}
-
-async function fetchPublished(table, orderField, { ascending = false, limit = null } = {}) {
-  const clientId = await currentClientId();
-  if (!clientId) return [];
-  let query = supabase
-    .from(table)
-    .select("*")
-    .eq("client_id", clientId)
-    .eq("is_published", true)
-    .order(orderField, { ascending });
-  if (limit) query = query.limit(limit);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+function delay(data, ms = 250) {
+  return new Promise((resolve) => setTimeout(() => resolve(data), ms));
 }
 
 // ----------------------------------------------------------------------------
-// الرئيسية — ملخص مبني من عدة جداول حقيقية + آخر تقرير تحليلات
+// الرئيسية — ملخص شامل (اشتراك / آخر تقرير / آخر حملة / آخر منشور / آخر تحديث / أداء)
+// جدول مقترح مستقبلًا: client_subscriptions, reports, campaigns, posts, activity_log
 // ----------------------------------------------------------------------------
 export async function getHomeSummary() {
-  const [subs, lastReports, lastCampaigns, lastNotes, analytics, activeCampaigns] = await Promise.all([
-    fetchPublished("client_subscriptions", "created_at", { limit: 1 }),
-    fetchPublished("reports", "report_date", { limit: 1 }),
-    fetchPublished("campaigns", "created_at", { limit: 1 }),
-    fetchPublished("client_notes", "note_date", { limit: 1 }),
-    fetchPublishedAnalyticsForCurrentClient(),
-    fetchPublished("campaigns", "created_at"),
-  ]);
-
-  const sub = subs[0];
-  const report = lastReports[0];
-  const campaign = lastCampaigns[0];
-  const note = lastNotes[0];
-  const bestPost = analytics?.hasData ? analytics.bestPosts?.[0] : null;
-
-  return {
-    subscription: sub
-      ? {
-          planName: sub.plan_name || "—",
-          status: sub.status || "—",
-          renewsAt: sub.renews_at ? formatDate(sub.renews_at) : "غير محدد",
-          daysLeft: sub.renews_at ? Math.max(0, Math.ceil((new Date(sub.renews_at) - new Date()) / 86400000)) : null,
-        }
-      : { planName: "لا يوجد اشتراك مفعّل بعد", status: "—", renewsAt: "—", daysLeft: null },
-    lastReport: report
-      ? { title: report.title, date: formatDate(report.report_date), note: (report.summary || "").slice(0, 90) }
-      : { title: "لا توجد تقارير بعد", date: "", note: "" },
-    lastCampaign: campaign
-      ? { name: campaign.name, platform: campaign.platform, status: campaign.status, spend: money(campaign.spend) }
-      : { name: "لا توجد حملات بعد", platform: "", status: "—", spend: "—" },
-    lastPost: bestPost
-      ? { title: bestPost.title, platform: bestPost.platform, date: analytics.latest.periodLabel, engagement: bestPost.metric }
-      : { title: "لا توجد بيانات منشورات بعد", platform: "", date: "", engagement: "" },
-    lastUpdate: note
-      ? { text: note.text_content, date: formatDate(note.note_date) }
-      : { text: "لا توجد تحديثات بعد", date: "" },
-    performanceSummary: analytics?.hasData
-      ? {
-          reach: analytics.latest.reach,
-          engagementRate: analytics.latest.engagementRate,
-          followersGrowth: analytics.latest.followersGrowth ?? 0,
-          activeCampaigns: activeCampaigns.filter((c) => (c.status || "").startsWith("نشط")).length,
-        }
-      : { reach: 0, engagementRate: 0, followersGrowth: 0, activeCampaigns: activeCampaigns.length },
-  };
+  return delay({
+    subscription: {
+      planName: "الباقة الاحترافية",
+      status: "نشط",
+      renewsAt: "15 سبتمبر 2026",
+      daysLeft: 45,
+    },
+    lastReport: {
+      title: "تقرير أداء يوليو 2026",
+      date: "01 أغسطس 2026",
+      note: "نمو 12% في الوصول مقارنة بالشهر السابق",
+    },
+    lastCampaign: {
+      name: "حملة العروض الصيفية",
+      platform: "فيسبوك وإنستجرام",
+      status: "نشطة",
+      spend: "3,200 ج.م",
+    },
+    lastPost: {
+      title: "منشور: عرض نهاية الأسبوع",
+      platform: "إنستجرام",
+      date: "30 يوليو 2026",
+      engagement: "4.2% نسبة تفاعل",
+    },
+    lastUpdate: {
+      text: "تم تحديث تصميم الهوية البصرية الخاصة بالحملة الجديدة",
+      date: "29 يوليو 2026",
+    },
+    performanceSummary: {
+      reach: 128000,
+      growthPercent: 12,
+      engagementRate: 4.6,
+      leads: 84,
+    },
+  });
 }
 
 // ----------------------------------------------------------------------------
@@ -107,90 +68,93 @@ export async function getAnalytics() {
 }
 
 // ----------------------------------------------------------------------------
-// الأداء — جدول حقيقي: performance_kpis
+// الأداء — جدول مقترح مستقبلًا: performance_kpis
 // ----------------------------------------------------------------------------
 export async function getPerformance() {
-  const clientId = await currentClientId();
-  if (!clientId) return { kpis: [] };
-  const { data, error } = await supabase
-    .from("performance_kpis")
-    .select("*")
-    .eq("client_id", clientId)
-    .eq("is_published", true)
-    .order("sort_order", { ascending: true });
-  if (error) throw error;
-  return {
-    kpis: (data || []).map((k) => ({ label: k.label, value: Number(k.value), target: Number(k.target) || 100, unit: k.unit || "" })),
-  };
+  return delay({
+    kpis: [
+      { label: "معدل التفاعل", value: 74, target: 80, unit: "%" },
+      { label: "نمو المتابعين", value: 62, target: 100, unit: "%" },
+      { label: "نسبة إتمام الأهداف الشهرية", value: 88, target: 100, unit: "%" },
+      { label: "رضا العملاء عن الحملات", value: 91, target: 100, unit: "%" },
+    ],
+  });
 }
 
 // ----------------------------------------------------------------------------
-// الحملات الإعلانية — جدول حقيقي: campaigns
+// الحملات الإعلانية — جدول مقترح مستقبلًا: campaigns
 // ----------------------------------------------------------------------------
 export async function getCampaigns() {
-  const rows = await fetchPublished("campaigns", "created_at");
-  return rows.map((c) => ({
-    id: c.id,
-    name: c.name,
-    platform: c.platform,
-    status: c.status,
-    budget: money(c.budget),
-    spend: money(c.spend),
-    reach: Number(c.reach || 0).toLocaleString("en-US"),
-  }));
+  return delay([
+    { id: 1, name: "حملة العروض الصيفية", platform: "فيسبوك / إنستجرام", status: "نشطة", budget: "5,000 ج.م", spend: "3,200 ج.م", reach: "62,000" },
+    { id: 2, name: "حملة إطلاق المنتج الجديد", platform: "تيك توك", status: "متوقفة مؤقتًا", budget: "3,000 ج.م", spend: "1,450 ج.م", reach: "21,300" },
+    { id: 3, name: "حملة رمضان 2026", platform: "فيسبوك", status: "منتهية", budget: "8,000 ج.م", spend: "8,000 ج.م", reach: "145,000" },
+  ]);
 }
 
 // ----------------------------------------------------------------------------
-// التقارير — جدول حقيقي: reports
+// التقارير — جدول مقترح مستقبلًا: reports
 // ----------------------------------------------------------------------------
 export async function getReports() {
-  const rows = await fetchPublished("reports", "report_date");
-  return rows.map((r) => ({ id: r.id, title: r.title, date: formatDate(r.report_date), summary: r.summary }));
+  return delay([
+    { id: 1, title: "تقرير أداء يوليو 2026", date: "01 أغسطس 2026", summary: "نمو الوصول 12%، وزيادة التفاعل 0.8% عن الشهر السابق. أفضل منشور حقق 9,200 مشاهدة." },
+    { id: 2, title: "تقرير أداء يونيو 2026", date: "01 يوليو 2026", summary: "إطلاق حملتين إعلانيتين جديدتين وزيادة عدد المتابعين بمقدار 640 متابع." },
+    { id: 3, title: "تقرير أداء مايو 2026", date: "01 يونيو 2026", summary: "تراجع طفيف في التفاعل بسبب تغيير خوارزمية المنصة، تم تعديل خطة المحتوى." },
+  ]);
 }
 
 // ----------------------------------------------------------------------------
-// الملفات — جدول حقيقي: client_files
+// الملفات — جدول مقترح مستقبلًا: client_files (+ Supabase Storage)
 // ----------------------------------------------------------------------------
 export async function getFiles() {
-  const rows = await fetchPublished("client_files", "file_date");
-  return rows.map((f) => ({
-    id: f.id,
-    name: f.name,
-    type: f.file_type,
-    size: f.size_label,
-    date: formatDate(f.file_date),
-    url: f.file_url,
-  }));
+  return delay([
+    { id: 1, name: "الهوية-البصرية-النهائية.pdf", type: "pdf", size: "4.2 MB", date: "20 يوليو 2026" },
+    { id: 2, name: "فيديو-إعلاني-صيفي.mp4", type: "video", size: "38 MB", date: "18 يوليو 2026" },
+    { id: 3, name: "لوجو-نهائي.png", type: "image", size: "1.1 MB", date: "10 يوليو 2026" },
+    { id: 4, name: "خطة-المحتوى-أغسطس.xlsx", type: "sheet", size: "220 KB", date: "29 يوليو 2026" },
+  ]);
 }
 
 // ----------------------------------------------------------------------------
-// السكربتات — جدول حقيقي: content_scripts
+// السكربتات — جدول مقترح مستقبلًا: content_scripts
 // ----------------------------------------------------------------------------
 export async function getScripts() {
-  const rows = await fetchPublished("content_scripts", "created_at");
-  return rows.map((s) => ({ id: s.id, title: s.title, platform: s.platform, status: s.status, excerpt: s.excerpt }));
+  return delay([
+    { id: 1, title: "سكربت إعلان - عرض نهاية الأسبوع", platform: "إنستجرام", status: "معتمد", excerpt: "استمتع بخصم يصل إلى 30% على كل الطلبات لفترة محدودة..." },
+    { id: 2, title: "سكربت فيديو - تعريف بالخدمة", platform: "تيك توك", status: "مسودة", excerpt: "هل تعبت من التسويق العشوائي؟ تعرف على حلولنا في أقل من دقيقة..." },
+    { id: 3, title: "سكربت منشور - قصة نجاح عميل", platform: "فيسبوك", status: "قيد المراجعة", excerpt: "قصة عميلنا اللي ضاعف مبيعاته خلال 3 شهور بس..." },
+  ]);
 }
 
 // ----------------------------------------------------------------------------
-// الملاحظات — جدول حقيقي: client_notes
+// الملاحظات — جدول مقترح مستقبلًا: client_notes
 // ----------------------------------------------------------------------------
 export async function getNotes() {
-  const rows = await fetchPublished("client_notes", "note_date");
-  return rows.map((n) => ({ id: n.id, author: n.author, date: formatDate(n.note_date), text: n.text_content }));
+  return delay([
+    { id: 1, author: "فريق أبو الله ماركتينج", date: "28 يوليو 2026", text: "تم تأجيل نشر حملة الأسبوع القادم يوم واحد بسبب مراجعة إضافية على التصميم." },
+    { id: 2, author: "فريق أبو الله ماركتينج", date: "22 يوليو 2026", text: "محتاجين موافقتك على السكربت الجديد قبل الجمعة عشان نلتزم بموعد النشر." },
+  ]);
 }
 
 // ----------------------------------------------------------------------------
-// الفواتير — جدول حقيقي: invoices
+// الفواتير — جدول مقترح مستقبلًا: invoices
 // ----------------------------------------------------------------------------
 export async function getInvoices() {
-  const rows = await fetchPublished("invoices", "invoice_date");
-  return rows.map((i) => ({ id: i.id, number: i.invoice_number, date: formatDate(i.invoice_date), amount: money(i.amount), status: i.status }));
+  return delay([
+    { id: 1, number: "INV-2026-014", date: "01 أغسطس 2026", amount: "2,500 ج.م", status: "مستحقة" },
+    { id: 2, number: "INV-2026-011", date: "01 يوليو 2026", amount: "2,500 ج.م", status: "مدفوعة" },
+    { id: 3, number: "INV-2026-008", date: "01 يونيو 2026", amount: "2,500 ج.م", status: "مدفوعة" },
+  ]);
 }
 
 // ----------------------------------------------------------------------------
-// الإشعارات — جدول حقيقي: notifications
+// الإشعارات — جدول مقترح مستقبلًا: notifications
 // ----------------------------------------------------------------------------
 export async function getNotifications() {
-  const rows = await fetchPublished("notifications", "created_at");
-  return rows.map((n) => ({ id: n.id, title: n.title, date: formatDate(n.notif_date || n.created_at), type: n.notif_type, read: n.is_read }));
+  return delay([
+    { id: 1, title: "تم إصدار فاتورة جديدة", date: "01 أغسطس 2026", type: "invoice", read: false },
+    { id: 2, title: "تقرير أداء يوليو جاهز للمراجعة", date: "01 أغسطس 2026", type: "report", read: false },
+    { id: 3, title: "تمت الموافقة على سكربت الفيديو التعريفي", date: "27 يوليو 2026", type: "script", read: true },
+    { id: 4, title: "حملة العروض الصيفية بدأت رسميًا", date: "20 يوليو 2026", type: "campaign", read: true },
+  ]);
 }

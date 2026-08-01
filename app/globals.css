@@ -59,7 +59,7 @@ html {
 }
 
 body {
-  font-family: var(--font-cairo), 'Cairo', sans-serif;
+  font-family: 'Cairo', sans-serif;
   background: var(--bg);
   color: var(--text-primary);
   overflow-x: hidden;
@@ -181,7 +181,7 @@ html.light .glass-panel {
 }
 
 .section-eyebrow {
-  font-family: var(--font-cinzel), 'Cinzel', serif;
+  font-family: 'Cinzel', serif;
   letter-spacing: 0.25em;
   font-size: 0.7rem;
   font-weight: 700;

@@ -1,30 +1,12 @@
 import './globals.css'
-import { Cairo, Cinzel } from 'next/font/google'
-
-const cairo = Cairo({
-  subsets: ['arabic', 'latin'],
-  weight: ['300', '400', '600', '700', '900'],
-  variable: '--font-cairo',
-  display: 'swap',
-})
-
-const cinzel = Cinzel({
-  subsets: ['latin'],
-  weight: ['700', '900'],
-  variable: '--font-cinzel',
-  display: 'swap',
-})
 
 export const metadata = {
   metadataBase: new URL('https://abdaullah-marketing-3dmf.vercel.app'),
-  title: {
-    default: 'Abdullah Marketing',
-    template: '%s | Abdullah Marketing',
-  },
-  description: 'خدمات تسويق ومحتوى احترافية للمطاعم والبراندات — سوشيال ميديا، تصميم، مواقع، إعلانات.',
+  title: 'Abdullah Marketing',
+  description: 'Social Media Marketing',
   openGraph: {
     title: 'Abdullah Marketing',
-    description: 'خدمات تسويق ومحتوى احترافية للمطاعم والبراندات — سوشيال ميديا، تصميم، مواقع، إعلانات.',
+    description: 'Social Media Marketing',
     url: 'https://abdaullah-marketing-3dmf.vercel.app',
     siteName: 'Abdullah Marketing',
     images: [
@@ -41,20 +23,23 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Abdullah Marketing',
-    description: 'خدمات تسويق ومحتوى احترافية للمطاعم والبراندات.',
+    description: 'Social Media Marketing',
     images: ['/og-image.jpg'],
-  },
-  robots: {
-    index: true,
-    follow: true,
   },
 }
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" className={`${cairo.variable} ${cinzel.variable}`}>
+    <html lang="ar">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Cinzel:wght@700;900&display=swap"
+        />
+      </head>
       <body>{children}</body>
     </html>
   )
 }
-
