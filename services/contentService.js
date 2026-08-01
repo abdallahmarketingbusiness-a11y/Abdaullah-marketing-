@@ -28,7 +28,9 @@ export async function fetchPublished(entity, { limit } = {}) {
   let query = supabase
     .from(tableOf(entity))
     .select("*")
-    .eq("status", CONTENT_STATUS.PUBLISHED)
+    .eq("status", CONTENT_STATUS.PUBLISHED);
+  if (entity === "socialPosts") query = query.order("is_pinned", { ascending: false });
+  query = query
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
   if (limit) query = query.limit(limit);
@@ -44,6 +46,7 @@ export async function fetchAllForAdmin(entity, { search = "" } = {}) {
     const searchField = entity === "caseStudies" ? "client_name" : "title";
     query = query.ilike(searchField, `%${term}%`);
   }
+  if (entity === "socialPosts") query = query.order("is_pinned", { ascending: false });
   query = query.order("sort_order", { ascending: true });
   const { data, error } = await query;
   if (error) throw error;

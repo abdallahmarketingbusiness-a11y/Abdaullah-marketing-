@@ -14,7 +14,9 @@ import {
   uploadContentImage,
 } from "../services/contentService";
 import ImageDropzone from "./ImageDropzone";
+import GalleryDropzone from "./GalleryDropzone";
 import Toast from "./Toast";
+import { broadcastNotificationToAll } from "../services/notificationsAdminService";
 
 const fieldStyle = {
   width: "100%",
@@ -79,16 +81,23 @@ const ENTITY_CONFIG = {
   socialPosts: {
     label: "المنشورات",
     titleField: "title",
-    titlePlaceholder: "عنوان المنشور",
+    titlePlaceholder: "عنوان المنشور (داخلي، مش بيظهر للعميل)",
     newLabel: "➕ منشور جديد",
     emptyLabel: "لا توجد منشورات حتى الآن.",
     fields: [
       { key: "title", label: "العنوان", type: "text" },
       { key: "platform", label: "المنصة", type: "select", options: SOCIAL_PLATFORMS },
       { key: "post_type", label: "النوع", type: "select", options: [SOCIAL_POST_TYPE.POST, SOCIAL_POST_TYPE.VIDEO] },
+      { key: "category", label: "التصنيف", type: "text" },
+      { key: "tags", label: "الوسوم (افصل بفاصلة)", type: "tags" },
+      { key: "caption", label: "الكابشن", type: "textarea" },
+      { key: "content", label: "المحتوى الكامل (اختياري)", type: "textarea" },
       { key: "stat_label", label: "إحصائية (مثال: 45K مشاهدة)", type: "text" },
-      { key: "media_url", label: "صورة / صورة غلاف الفيديو", type: "image" },
+      { key: "media_url", label: "صورة الغلاف", type: "image" },
+      { key: "gallery_urls", label: "صور إضافية", type: "gallery" },
       { key: "video_url", label: "رابط الفيديو (لو النوع فيديو)", type: "text" },
+      { key: "is_pinned", label: "📌 تثبيت المنشور في الأعلى", type: "checkbox" },
+      { key: "scheduled_at", label: "⏰ جدولة النشر (اختياري)", type: "datetime" },
     ],
   },
 };
@@ -98,6 +107,9 @@ function emptyForm(entity) {
   const form = { status: CONTENT_STATUS.PUBLISHED };
   cfg.fields.forEach((f) => {
     if (f.type === "tags") form[f.key] = [];
+    else if (f.type === "gallery") form[f.key] = [];
+    else if (f.type === "checkbox") form[f.key] = false;
+    else if (f.type === "datetime") form[f.key] = "";
     else if (f.type === "number") form[f.key] = f.key === "read_time_minutes" ? 4 : 0;
     else if (f.type === "select") form[f.key] = f.options[0];
     else form[f.key] = "";
@@ -109,10 +121,18 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
   const cfg = ENTITY_CONFIG[entity];
   const isEdit = !!item;
   const initial = isEdit
-    ? { ...emptyForm(entity), ...item, tags: Array.isArray(item.tags) ? item.tags : [] }
+    ? {
+        ...emptyForm(entity),
+        ...item,
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        scheduled_at: item.scheduled_at ? item.scheduled_at.slice(0, 16) : "",
+      }
     : emptyForm(entity);
   const [form, setForm] = useState(initial);
   const [imageFile, setImageFile] = useState(null);
+  const [galleryItems, setGalleryItems] = useState(
+    (item?.gallery_urls || []).map((url) => ({ id: crypto.randomUUID(), url }))
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -139,8 +159,28 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
           ? payload.tags
           : String(payload.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
       }
+      if (cfg.fields.some((f) => f.type === "gallery")) {
+        const uploaded = await Promise.all(
+          galleryItems.map((it) => (it.file ? uploadContentImage(it.file) : Promise.resolve(it.url)))
+        );
+        payload.gallery_urls = uploaded;
+      }
+      if (cfg.fields.some((f) => f.type === "datetime")) {
+        payload.scheduled_at = payload.scheduled_at ? new Date(payload.scheduled_at).toISOString() : null;
+      }
+
+      const wasPublished = isEdit && item.status === CONTENT_STATUS.PUBLISHED;
       if (isEdit) await updateContent(entity, item.id, payload);
       else await createContent(entity, payload);
+
+      // إشعار تلقائي لكل العملاء عند نشر منشور جديد (لأول مرة)
+      if (entity === "socialPosts" && payload.status === CONTENT_STATUS.PUBLISHED && !wasPublished) {
+        broadcastNotificationToAll({
+          title: `🆕 منشور جديد: ${payload.title}`,
+          notifType: "campaign",
+          notifDate: new Date().toISOString().slice(0, 10),
+        }).catch(() => {}); // فشل الإشعار مايوقفش حفظ المنشور
+      }
 
       flash(isEdit ? "✅ تم حفظ التعديلات" : "✅ تم الإضافة");
       onSaved();
@@ -160,7 +200,7 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
 
         {cfg.fields.map((f) => (
           <div key={f.key}>
-            <label style={labelStyle}>{f.label}</label>
+            {f.type !== "checkbox" && <label style={labelStyle}>{f.label}</label>}
             {f.type === "textarea" && (
               <textarea rows={3} style={{ ...fieldStyle, resize: "vertical" }} value={form[f.key] || ""} onChange={(e) => update(f.key, e.target.value)} />
             )}
@@ -185,6 +225,18 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
             )}
             {f.type === "image" && (
               <ImageDropzone previewUrl={form[f.key]} onFileSelected={setImageFile} />
+            )}
+            {f.type === "gallery" && (
+              <GalleryDropzone items={galleryItems} onChange={setGalleryItems} />
+            )}
+            {f.type === "checkbox" && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#ddd", fontSize: 13, cursor: "pointer" }}>
+                <input type="checkbox" checked={!!form[f.key]} onChange={(e) => update(f.key, e.target.checked)} />
+                {f.label}
+              </label>
+            )}
+            {f.type === "datetime" && (
+              <input type="datetime-local" style={fieldStyle} value={form[f.key] || ""} onChange={(e) => update(f.key, e.target.value)} />
             )}
           </div>
         ))}
@@ -254,6 +306,13 @@ function EntitySection({ entity }) {
     const next = item.status === CONTENT_STATUS.HIDDEN ? CONTENT_STATUS.PUBLISHED : CONTENT_STATUS.HIDDEN;
     const updated = await setContentStatus(entity, item.id, next);
     setItems((list) => list.map((p) => (p.id === item.id ? updated : p)));
+    if (entity === "socialPosts" && next === CONTENT_STATUS.PUBLISHED) {
+      broadcastNotificationToAll({
+        title: `🆕 منشور جديد: ${updated.title}`,
+        notifType: "campaign",
+        notifDate: new Date().toISOString().slice(0, 10),
+      }).catch(() => {});
+    }
   }
 
   function handleDragStart(idx) { setDragIndex(idx); }
@@ -309,7 +368,10 @@ function EntitySection({ entity }) {
                   <img src={item[imageField]} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{item[cfg.titleField]}</h3>
+                  <h3 style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>
+                    {item.is_pinned && <span title="مثبّت">📌 </span>}
+                    {item[cfg.titleField]}
+                  </h3>
                   {entity === "socialPosts" && (
                     <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.platform} · {item.post_type === "video" ? "فيديو" : "بوست"}</p>
                   )}
