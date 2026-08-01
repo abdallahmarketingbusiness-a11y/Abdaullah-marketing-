@@ -2,17 +2,212 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================
+   DESIGN SYSTEM — Abdullah Marketing (SaaS-grade)
+   ========================================================= */
+
+:root {
+  --gold: #C9963A;
+  --gold-light: #E8BE6A;
+  --gold-lighter: #F5D78E;
+
+  --bg: #060606;
+  --bg-elevated: #0E0E0E;
+  --bg-card: #121212;
+  --bg-card-hover: #161616;
+  --border: #2A2A2A;
+  --border-soft: rgba(201,150,58,0.14);
+
+  --text-primary: #F2F2F2;
+  --text-secondary: #A8A8A8;
+  --text-muted: #666666;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  --shadow-card: 0 10px 30px rgba(0,0,0,0.35);
+  --shadow-card-hover: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,150,58,0.25);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Light theme override — toggled via .light class on <html> */
+html.light {
+  --bg: #FAF8F4;
+  --bg-elevated: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FFFDF7;
+  --border: #E8E1D3;
+  --border-soft: rgba(201,150,58,0.25);
+
+  --text-primary: #1A1A1A;
+  --text-secondary: #55504A;
+  --text-muted: #928C80;
+
+  --shadow-card: 0 8px 24px rgba(120,90,30,0.08);
+  --shadow-card-hover: 0 16px 40px rgba(120,90,30,0.14), 0 0 0 1px rgba(201,150,58,0.3);
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Cairo', sans-serif;
-  background: #060606;
+  background: var(--bg);
+  color: var(--text-primary);
   overflow-x: hidden;
+  transition: background-color 0.35s var(--ease-out), color 0.35s var(--ease-out);
 }
+
+::selection {
+  background: var(--gold);
+  color: #060606;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gold), var(--gold-light));
+  border-radius: 10px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--gold-light); }
+
+/* Focus ring for accessibility, styled to match the brand */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* =========================================================
+   Reusable component classes
+   ========================================================= */
+
+.card-pro {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out), border-color 0.35s var(--ease-out), background-color 0.35s var(--ease-out);
+}
+
+.card-pro:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--border-soft);
+  background: var(--bg-card-hover);
+}
+
+.glass-panel {
+  background: rgba(18,18,18,0.7);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--border-soft);
+}
+
+html.light .glass-panel {
+  background: rgba(255,255,255,0.75);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: #0A0A0A;
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out), filter 0.25s var(--ease-out);
+  box-shadow: 0 4px 20px rgba(201,150,58,0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(201,150,58,0.4);
+  filter: brightness(1.05);
+}
+
+.btn-primary:active { transform: translateY(0); }
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: var(--gold);
+  border: 1.5px solid var(--gold);
+  transition: all 0.25s var(--ease-out);
+}
+
+.btn-outline:hover {
+  background: var(--gold);
+  color: #0A0A0A;
+  transform: translateY(-2px);
+}
+
+.badge-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(201,150,58,0.12);
+  color: var(--gold-light);
+  border: 1px solid rgba(201,150,58,0.25);
+}
+
+.divider-gradient {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--border-soft), transparent);
+}
+
+.section-eyebrow {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.25em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.text-shimmer {
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold-lighter) 25%, var(--gold) 50%, var(--gold-lighter) 75%, var(--gold) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+.hover-lift {
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* =========================================================
+   Keyframes
+   ========================================================= */
 
 @keyframes floatUp {
   0% { opacity: 0; transform: translateY(100vh); }
@@ -40,6 +235,30 @@ body {
   to { transform: rotate(360deg); }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(201,150,58,0); }
+  50% { box-shadow: 0 0 24px rgba(201,150,58,0.35); }
+}
+
 .animate-spin-slow {
   animation: spin-slow 20s linear infinite;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+
+/* Respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

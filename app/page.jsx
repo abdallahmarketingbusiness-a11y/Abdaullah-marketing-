@@ -18,6 +18,12 @@ import {
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
 import AnnouncementBar from "../components/AnnouncementBar";
+import ClientLogin from "../components/ClientLogin";
+import ClientSignup from "../components/ClientSignup";
+import ClientForgotPassword from "../components/ClientForgotPassword";
+import ClientResetPassword from "../components/ClientResetPassword";
+import ClientDashboard from "../components/ClientDashboard";
+import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
 
 const GOLD = "#C9963A";
 const GOLD2 = "#E8BE6A";
@@ -292,14 +298,12 @@ function ServicesSection({ setPage }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
         {services.map((s, i) => (
           <Reveal key={i} delay={i * 45}>
-            <div className="rounded-2xl p-8 border relative overflow-hidden group cursor-default transition-all duration-300 hover:-translate-y-1" style={{ background: "#161616", borderColor: "#2A2A2A" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,150,58,0.35)"; e.currentTarget.style.boxShadow = "0 20px 60px rgba(0,0,0,0.5)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "#2A2A2A"; e.currentTarget.style.boxShadow = "none"; }}>
+            <div className="card-pro p-8 relative overflow-hidden group cursor-default">
               <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-5 transition-all duration-300 group-hover:scale-110" style={{ background: "rgba(201,150,58,0.08)", border: "1px solid rgba(201,150,58,0.2)" }}>{s.icon}</div>
-              <h3 className="text-base font-bold text-white mb-2">{s.name}</h3>
-              <p className="text-xs leading-relaxed" style={{ color: "#666" }}>{s.desc}</p>
-              <span className="inline-block mt-4 text-xs font-bold tracking-wider px-3 py-1 rounded-full" style={{ color: GOLD, background: "rgba(201,150,58,0.08)", border: "1px solid rgba(201,150,58,0.2)" }}>{s.tag}</span>
+              <h3 className="text-base font-bold mb-2" style={{ color: "var(--text-primary)" }}>{s.name}</h3>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{s.desc}</p>
+              <span className="badge-gold inline-flex mt-4">{s.tag}</span>
             </div>
           </Reveal>
         ))}
@@ -375,9 +379,7 @@ function PortfolioSection() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
         {visible.map((item, i) => (
           <Reveal key={item.id} delay={i * 45}>
-            <div onClick={() => openLightbox(item)} className="rounded-2xl border overflow-hidden cursor-pointer group transition-all duration-300 hover:-translate-y-2" style={{ background: "#161616", borderColor: item.is_pinned ? "rgba(201,150,58,0.5)" : "#2A2A2A" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,150,58,0.35)"; e.currentTarget.style.boxShadow = "0 24px 70px rgba(0,0,0,0.6)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = item.is_pinned ? "rgba(201,150,58,0.5)" : "#2A2A2A"; e.currentTarget.style.boxShadow = "none"; }}>
+            <div onClick={() => openLightbox(item)} className="card-pro overflow-hidden cursor-pointer group" style={item.is_pinned ? { borderColor: "rgba(201,150,58,0.5)" } : undefined}>
               <div className="relative h-52 overflow-hidden">
                 {item.main_image_url && (
                   <img src={item.main_image_url} alt={item.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -398,8 +400,8 @@ function PortfolioSection() {
               </div>
               <div className="p-5">
                 <div className="text-xs font-bold tracking-widest mb-1" style={{ color: GOLD }}>{(item.category || "").toUpperCase()}</div>
-                <h3 className="text-sm font-bold text-white mb-1">{item.title}</h3>
-                <p className="text-xs leading-relaxed mb-3" style={{ color: "#666" }}>{item.short_description}</p>
+                <h3 className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>{item.title}</h3>
+                <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--text-muted)" }}>{item.short_description}</p>
               </div>
             </div>
           </Reveal>
@@ -1299,7 +1301,7 @@ function PricingSection({ setPage }) {
                 style={{
                   background: pkg.gradient,
                   border: `1.5px solid ${isActive || isFeatured ? pkg.color : "rgba(255,255,255,0.07)"}`,
-                  borderRadius: 20,
+                  borderRadius: "var(--radius-md)",
                   padding: "28px 22px 24px",
                   position: "relative",
                   cursor: "pointer",
@@ -1866,7 +1868,7 @@ function ContactPage() {
   );
 }
 
-function Navbar({ page, setPage }) {
+function Navbar({ page, setPage, clientSession }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
@@ -1900,30 +1902,48 @@ function Navbar({ page, setPage }) {
   };
   return (
     <>
-      <nav dir="rtl" className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 transition-all duration-300" style={{ background: "rgba(6,6,6,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(201,150,58,0.12)", boxShadow: scrolled ? "0 4px 40px rgba(0,0,0,0.7)" : "none" }}>
+      <nav dir="rtl" className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 transition-all duration-300 glass-panel" style={{ boxShadow: scrolled ? "0 4px 40px rgba(0,0,0,0.45)" : "none", borderBottom: scrolled ? "1px solid var(--border-soft)" : "1px solid transparent" }}>
         <button onClick={() => handleNav("home")} className="font-black tracking-widest text-sm transition-opacity hover:opacity-80" style={{ fontFamily: "'Cinzel', serif", background: `linear-gradient(135deg, ${GOLD}, ${GOLD3}, ${GOLD})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>ABDULLAH</button>
-        <ul className="hidden md:flex gap-6 list-none">
+        <ul className="hidden md:flex gap-7 list-none">
           {links.map(l => (
             <li key={l.id}>
-              <button onClick={() => handleNav(l.id)} className="text-xs font-semibold tracking-wider transition-colors duration-200 relative group pb-1" style={{ color: "#666" }}
+              <button onClick={() => handleNav(l.id)} className="text-xs font-semibold tracking-wider transition-colors duration-200 relative group pb-1" style={{ color: "var(--text-muted)" }}
                 onMouseEnter={e => { e.currentTarget.style.color = GOLD; }}
-                onMouseLeave={e => { e.currentTarget.style.color = "#666"; }}>
+                onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; }}>
                 {l.label}
-                <span className="absolute bottom-0 right-0 h-px transition-all duration-300 group-hover:w-full" style={{ width: 0, background: GOLD }} />
+                <span className="absolute bottom-0 right-0 h-px transition-all duration-300 group-hover:w-full rounded-full" style={{ width: 0, background: `linear-gradient(90deg, ${GOLD}, ${GOLD3})` }} />
               </button>
             </li>
           ))}
         </ul>
-        <a href={WA_LINK} target="_blank" rel="noreferrer" className="hidden md:block font-bold text-xs px-5 py-2 rounded-lg transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5" style={{ background: GOLD, color: "#000" }}>واتساب</a>
-        <button className="md:hidden text-xl" style={{ color: GOLD, background: "none", border: "none" }} onClick={() => setMenuOpen(m => !m)}>{menuOpen ? "✕" : "☰"}</button>
+        <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
+            className="text-xs font-semibold tracking-wider px-4 py-2 rounded-full transition-colors"
+            style={{ color: GOLD, border: "1px solid rgba(201,150,58,0.35)", background: "transparent" }}
+          >
+            {clientSession ? "حسابي" : "تسجيل الدخول"}
+          </button>
+          <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn-primary !py-2 !px-5 text-xs">واتساب</a>
+        </div>
+        <div className="flex md:hidden items-center gap-2">
+          <button className="text-xl leading-none w-9 h-9 flex items-center justify-center rounded-full transition-colors" style={{ color: GOLD, background: "rgba(201,150,58,0.08)", border: "none" }} onClick={() => setMenuOpen(m => !m)}>{menuOpen ? "✕" : "☰"}</button>
+        </div>
       </nav>
       {menuOpen && (
-        <div dir="rtl" className="fixed top-14 left-0 right-0 z-40 py-4 border-b" style={{ background: "rgba(6,6,6,0.98)", backdropFilter: "blur(20px)", borderColor: "#2A2A2A" }}>
+        <div dir="rtl" className="fixed top-16 left-0 right-0 z-40 py-3 border-b glass-panel" style={{ animation: "fadeDown 0.25s ease" }}>
           {links.map(l => (
-            <button key={l.id} onClick={() => handleNav(l.id)} className="block w-full text-right px-6 py-3 text-sm font-semibold transition-colors" style={{ color: "#888" }}
+            <button key={l.id} onClick={() => handleNav(l.id)} className="block w-full text-right px-6 py-3 text-sm font-semibold transition-colors" style={{ color: "var(--text-secondary)" }}
               onMouseEnter={e => { e.currentTarget.style.color = GOLD; }}
-              onMouseLeave={e => { e.currentTarget.style.color = "#888"; }}>{l.label}</button>
+              onMouseLeave={e => { e.currentTarget.style.color = "var(--text-secondary)"; }}>{l.label}</button>
           ))}
+          <button
+            onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
+            className="block w-full text-right px-6 py-3 text-sm font-semibold transition-colors"
+            style={{ color: GOLD }}
+          >
+            {clientSession ? "حسابي" : "تسجيل الدخول"}
+          </button>
         </div>
       )}
     </>
@@ -1932,20 +1952,29 @@ function Navbar({ page, setPage }) {
 
 function Footer({ setPage }) {
   return (
-    <footer dir="rtl" className="flex items-center justify-between flex-wrap gap-4 px-6 md:px-10 py-8 border-t" style={{ background: "#0E0E0E", borderColor: "#2A2A2A" }}>
-      <span className="font-black tracking-widest text-sm" style={{ fontFamily: "'Cinzel', serif", color: GOLD }}>ABDULLAH MARKETING</span>
-      <span className="text-xs" style={{ color: "#555" }}>© 2025 Abdullah Marketing · أسيوط، مصر</span>
-      <div className="flex gap-2">
-        {[
-          { href: WA_LINK, icon: "📲", title: "WhatsApp" },
-          { href: "https://www.instagram.com/3bdullah.marketing?igsh=MTEzMXFiZTh2cG81cQ==", icon: "📷", title: "Instagram Business" },
-          { href: "https://www.facebook.com/share/1DwbCov7zr/", icon: "📘", title: "Facebook" },
-          { href: "https://www.instagram.com/3bdullah.dyaa?igsh=MTFnMDM4NHUxemc3cQ==", icon: "📸", title: "Instagram Personal" },
-        ].map((s, i) => (
-          <a key={i} href={s.href} target="_blank" rel="noreferrer" title={s.title} className="w-9 h-9 rounded-lg flex items-center justify-center text-base transition-all duration-200 hover:-translate-y-0.5" style={{ background: "#161616", border: "1px solid #2A2A2A" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "#2A2A2A"; }}>{s.icon}</a>
-        ))}
+    <footer dir="rtl" className="px-6 md:px-10 pt-10 pb-8" style={{ background: "var(--bg-elevated)", borderTop: "1px solid var(--border)" }}>
+      <div className="flex items-center justify-between flex-wrap gap-6">
+        <div>
+          <span className="font-black tracking-widest text-sm block" style={{ fontFamily: "'Cinzel', serif", color: GOLD }}>ABDULLAH MARKETING</span>
+          <span className="text-xs mt-1 block" style={{ color: "var(--text-muted)" }}>منصة تسويق رقمي احترافية · أسيوط، مصر</span>
+        </div>
+        <div className="flex gap-2.5">
+          {[
+            { href: WA_LINK, icon: "📲", title: "WhatsApp" },
+            { href: "https://www.instagram.com/3bdullah.marketing?igsh=MTEzMXFiZTh2cG81cQ==", icon: "📷", title: "Instagram Business" },
+            { href: "https://www.facebook.com/share/1DwbCov7zr/", icon: "📘", title: "Facebook" },
+            { href: "https://www.instagram.com/3bdullah.dyaa?igsh=MTFnMDM4NHUxemc3cQ==", icon: "📸", title: "Instagram Personal" },
+          ].map((s, i) => (
+            <a key={i} href={s.href} target="_blank" rel="noreferrer" title={s.title} className="w-10 h-10 rounded-xl flex items-center justify-center text-base transition-all duration-200 hover:-translate-y-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.boxShadow = "0 8px 20px rgba(201,150,58,0.2)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}>{s.icon}</a>
+          ))}
+        </div>
+      </div>
+      <div className="divider-gradient my-6" />
+      <div className="flex items-center justify-between flex-wrap gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
+        <span>© {new Date().getFullYear()} Abdullah Marketing. جميع الحقوق محفوظة.</span>
+        <span>صُنع بشغف لعلامتك التجارية ✦</span>
       </div>
     </footer>
   );
@@ -1956,6 +1985,8 @@ export default function App() {
   const [selectedPackageId, setSelectedPackageId] = useState(null);
   const [builderInitialData, setBuilderInitialData] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [clientSession, setClientSession] = useState(null);
+  const [clientAuthChecked, setClientAuthChecked] = useState(false);
 
   // نظام الباقات المخصصة يستخدم روابط hash (#gallery, #admin, #package-details?id=..)
   // عشان صفحة /admin تكون قابلة للوصول برابط مباشر وغير موجودة في القائمة العادية،
@@ -1972,6 +2003,11 @@ export default function App() {
         setPage("package-details");
       } else if (route === "admin") setPage("admin");
       else if (route === "portfolio-gallery") setPage("portfolio-gallery");
+      else if (route === "login") setPage("login");
+      else if (route === "signup") setPage("signup");
+      else if (route === "forgot-password") setPage("forgot-password");
+      else if (route === "reset-password") setPage("reset-password");
+      else if (route === "dashboard") setPage("dashboard");
     }
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
@@ -1979,7 +2015,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery"].includes(page)) {
+    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery", "login", "signup", "forgot-password", "reset-password", "dashboard"].includes(page)) {
       const hash =
         page === "package-details" && selectedPackageId
           ? `#package-details?id=${selectedPackageId}`
@@ -2001,6 +2037,20 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [page]);
+
+  // نظام حسابات العملاء: يتحقق من وجود جلسة دخول شغالة أول ما الموقع يفتح،
+  // ويفضل يسمع لأي تغيير (دخول/خروج/تحديث توكن) عشان يحدّث الواجهة (Navbar وغيره)
+  useEffect(() => {
+    getCurrentClientSession().then((session) => {
+      setClientSession(session);
+      setClientAuthChecked(true);
+    });
+    const unsubscribe = onClientAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") return; // بتتعالج جوه صفحة reset-password نفسها
+      setClientSession(session);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const setMeta = (attr, key, content) => {
@@ -2053,8 +2103,8 @@ export default function App() {
         .animate-spin-slow { animation: spin-slow 20s linear infinite; }
       `}</style>
       <WAButton />
-      {page !== "admin" && <AnnouncementBar />}
-      <Navbar page={page} setPage={setPage} />
+      {!["admin", "login", "signup", "forgot-password", "reset-password"].includes(page) && <AnnouncementBar />}
+      <Navbar page={page} setPage={setPage} clientSession={clientSession} />
       {page === "home" && (
         <>
           <HeroPage setPage={setPage} />
@@ -2089,6 +2139,32 @@ export default function App() {
       )}
 
       {page === "portfolio-gallery" && <PortfolioGallery />}
+
+      {page === "login" && (
+        <ClientLogin
+          setPage={setPage}
+          onSuccess={(session) => { setClientSession(session); setPage("dashboard"); }}
+        />
+      )}
+      {page === "signup" && (
+        <ClientSignup
+          setPage={setPage}
+          onSuccess={(session) => { setClientSession(session); setPage("dashboard"); }}
+        />
+      )}
+      {page === "forgot-password" && <ClientForgotPassword setPage={setPage} />}
+      {page === "reset-password" && <ClientResetPassword setPage={setPage} />}
+      {page === "dashboard" && clientAuthChecked && !clientSession && (
+        <ClientLogin
+          setPage={setPage}
+          onSuccess={(session) => { setClientSession(session); setPage("dashboard"); }}
+        />
+      )}
+      {page === "dashboard" && clientSession && (
+        <ClientDashboard
+          onLogout={async () => { await signOutClient(); setClientSession(null); setPage("home"); }}
+        />
+      )}
 
       {page === "admin" && !isAdmin && (
         <AdminLogin onSuccess={() => setIsAdmin(true)} />
