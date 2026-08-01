@@ -15,6 +15,7 @@ import AboutManager from "./AboutManager";
 import AnalyticsManager from "./AnalyticsManager";
 import ClientPortalManager from "./ClientPortalManager";
 import ContentManager from "./ContentManager";
+import SubscriptionsManager from "./SubscriptionsManager";
 
 function QuickEditModal({ pkg, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -86,6 +87,7 @@ function QuickEditModal({ pkg, onClose, onSaved }) {
 const TABS = [
   { id: "overview", label: "📊 لوحة القيادة" },
   { id: "packages", label: "🛠️ الباقات" },
+  { id: "subscriptions", label: "💳 الاشتراكات" },
   { id: "analytics", label: "📈 تحليلات العملاء" },
   { id: "portal", label: "🗂️ بيانات لوحة العميل" },
   { id: "portfolio", label: "🖼️ معرض الأعمال" },
@@ -182,6 +184,7 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
         </div>
 
         {tab === "overview" && <DashboardOverview />}
+        {tab === "subscriptions" && <SubscriptionsManager />}
         {tab === "analytics" && <AnalyticsManager />}
         {tab === "portal" && <ClientPortalManager />}
         {tab === "portfolio" && <PortfolioManager />}

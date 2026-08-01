@@ -124,6 +124,17 @@ export default function PackagesGallery({ onOpenPackage, onCreateNew, onBack }) 
   const [businessType, setBusinessType] = useState("all");
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
+  const [coupon, setCoupon] = useState(
+    typeof window !== "undefined" ? sessionStorage.getItem("am_coupon_code") || "" : ""
+  );
+
+  function handleCouponChange(v) {
+    setCoupon(v);
+    if (typeof window !== "undefined") {
+      if (v.trim()) sessionStorage.setItem("am_coupon_code", v.trim());
+      else sessionStorage.removeItem("am_coupon_code");
+    }
+  }
 
   const [items, setItems] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -177,6 +188,30 @@ export default function PackagesGallery({ onOpenPackage, onCreateNew, onBack }) 
         <p style={{ color: "#888", fontSize: 14, marginBottom: 26 }}>
           تصفّح باقات جاهزة صممها عملاء تانيين، أو ابدأ باقتك من الصفر
         </p>
+
+        {/* كود خصم — بيتحفظ ويترشّح تلقائيًا مع أي باقة هتختارها وتشترك فيها */}
+        <div
+          style={{
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+            border: "1px dashed rgba(201,150,58,0.35)", borderRadius: 12,
+            background: "rgba(201,150,58,0.05)", padding: "12px 16px", marginBottom: 18,
+          }}
+        >
+          <span style={{ color: GOLD3, fontSize: 13, fontWeight: 800, whiteSpace: "nowrap" }}>🏷️ عندك كود خصم؟</span>
+          <input
+            value={coupon}
+            onChange={(e) => handleCouponChange(e.target.value)}
+            placeholder="اكتب الكود هنا (اختياري)"
+            style={{
+              flex: "1 1 200px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(201,150,58,0.25)",
+              borderRadius: 8, padding: "9px 12px",
+              color: "#fff", fontSize: 13, outline: "none",
+            }}
+          />
+          <span style={{ color: "#888", fontSize: 11.5 }}>هيتطبّق تلقائيًا لما تختار باقة وتدوس "اشترك الآن"</span>
+        </div>
 
         {/* Search + filters */}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 28 }}>

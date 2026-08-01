@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { GOLD, GOLD2, GOLD3, BG, FONT } from "../config/theme";
 import { fetchPackageById } from "../services/packagesService";
+import SubscribeModal from "./SubscribeModal";
 
 function Row({ label, value }) {
   if (value === undefined || value === null || value === "" || value === 0) return null;
@@ -23,6 +24,7 @@ export default function PackageDetails({ packageId, onUseAsNew, onBack }) {
   const [pkg, setPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showSubscribe, setShowSubscribe] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -100,11 +102,21 @@ export default function PackageDetails({ packageId, onUseAsNew, onBack }) {
 
             <div style={{ display: "flex", gap: 10, marginTop: 22, flexWrap: "wrap" }}>
               <button
-                onClick={() => onUseAsNew(pkg)}
+                onClick={() => setShowSubscribe(true)}
                 style={{
                   flex: "1 1 200px", padding: "13px 0", borderRadius: 12, border: "none",
                   fontWeight: 900, fontSize: 14, cursor: "pointer", color: "#000",
                   background: `linear-gradient(135deg,${GOLD},${GOLD2})`,
+                }}
+              >
+                🚀 اشترك الآن
+              </button>
+              <button
+                onClick={() => onUseAsNew(pkg)}
+                style={{
+                  flex: "1 1 160px", padding: "13px 0", borderRadius: 12, textAlign: "center",
+                  fontWeight: 800, fontSize: 14, cursor: "pointer", color: GOLD,
+                  border: "1px solid rgba(201,150,58,0.4)", background: "transparent",
                 }}
               >
                 📄 استخدام هذه الباقة
@@ -123,6 +135,15 @@ export default function PackageDetails({ packageId, onUseAsNew, onBack }) {
               </a>
             </div>
           </div>
+        )}
+
+        {showSubscribe && pkg && (
+          <SubscribeModal
+            pkg={pkg}
+            initialCoupon={typeof window !== "undefined" ? sessionStorage.getItem("am_coupon_code") || "" : ""}
+            onClose={() => setShowSubscribe(false)}
+            onSubscribed={() => { window.location.hash = "#dashboard"; }}
+          />
         )}
       </div>
     </div>

@@ -36,6 +36,7 @@ import {
 } from "../services/clientPortalService";
 import Toast from "./Toast";
 import { AnalyticsTrendChart, PostsCompareList, InsightList } from "./AnalyticsCharts";
+import { fetchMySubscriptions, requestRenewal } from "../services/subscriptionService";
 
 // ============================================================================
 // إعدادات وعناصر عامة
@@ -59,6 +60,7 @@ const STATUS_COLORS = {
   "نشط": "#4ade80", "نشطة": "#4ade80",
   "متوقفة مؤقتًا": "#facc15", "مسودة": "#facc15", "مستحقة": "#facc15", "قيد المراجعة": "#facc15",
   "منتهية": "#9ca3af", "مدفوعة": "#4ade80", "معتمد": "#4ade80",
+  "منتهي": "#9ca3af", "ملغي": "#f87171",
 };
 
 function Badge({ text }) {
@@ -665,6 +667,103 @@ function NotesSection() {
 }
 
 // ============================================================================
+// 8.5) الاشتراكات — package_subscriptions (services/subscriptionService.js)
+// ============================================================================
+function SubscriptionCard({ sub, notify, onChanged }) {
+  const [renewing, setRenewing] = useState(false);
+
+  async function handleRenew() {
+    setRenewing(true);
+    try {
+      const { whatsappLink } = await requestRenewal(sub.id);
+      window.open(whatsappLink, "_blank");
+      notify("success", "تم إرسال طلب التجديد ✅ في انتظار موافقة الأدمن.");
+      onChanged();
+    } catch (err) {
+      notify("error", err.message || "تعذّر إرسال طلب التجديد.");
+    } finally {
+      setRenewing(false);
+    }
+  }
+
+  const canRenew = sub.status === "active" || sub.status === "expired";
+
+  return (
+    <Card>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+        <div>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>📦 {sub.packageName}</div>
+          {sub.businessName && <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{sub.businessName}</div>}
+        </div>
+        <Badge text={sub.statusLabel} />
+      </div>
+
+      <div className="grid grid-cols-2" style={{ gap: 8, marginBottom: 10 }}>
+        <MiniStat label="تاريخ البداية" value={sub.startDateLabel} />
+        <MiniStat label="تاريخ الانتهاء" value={sub.endDateLabel} />
+      </div>
+
+      {sub.status === "active" && typeof sub.daysLeft === "number" && (
+        <p style={{ color: sub.daysLeft <= 5 ? "#facc15" : "#888", fontSize: 12, marginBottom: 10 }}>
+          ⏳ متبقّي {Math.max(0, sub.daysLeft)} يوم على انتهاء الاشتراك
+        </p>
+      )}
+
+      <div style={{ color: GOLD2, fontWeight: 800, fontSize: 14, marginBottom: canRenew ? 12 : 0 }}>
+        {sub.finalPrice.toLocaleString()} ج.م
+        {sub.discountAmount > 0 && (
+          <span style={{ color: "#888", fontWeight: 600, fontSize: 11.5 }}> (بعد خصم {sub.discountAmount.toLocaleString()} ج.م)</span>
+        )}
+      </div>
+
+      {canRenew && (
+        <button
+          onClick={handleRenew}
+          disabled={renewing}
+          style={{
+            width: "100%", padding: "10px 0", borderRadius: 10, cursor: renewing ? "not-allowed" : "pointer",
+            border: "1px solid rgba(201,150,58,0.4)", background: "transparent", color: GOLD,
+            fontWeight: 800, fontSize: 12.5, fontFamily: FONT,
+          }}
+        >
+          {renewing ? "جاري الإرسال..." : "🔄 تجديد الاشتراك"}
+        </button>
+      )}
+    </Card>
+  );
+}
+
+function SubscriptionsSection({ notify }) {
+  const [items, setItems] = useState(null);
+
+  function load() {
+    fetchMySubscriptions().then(setItems).catch(() => setItems([]));
+  }
+
+  useEffect(() => { load(); }, []);
+
+  if (!items) return <SectionLoading />;
+  if (items.length === 0) {
+    return (
+      <div>
+        <EmptyState text="لا يوجد اشتراكات حتى الآن." />
+        <div style={{ marginTop: 14 }}>
+          <QuickLink icon="📦" label="تصفّح الباقات واشترك دلوقتي" onClick={() => goTo("gallery")} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 14 }}>
+      {items.map((sub) => (
+        <SubscriptionCard key={sub.id} sub={sub} notify={notify} onChanged={load} />
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
 // 9) الفواتير
 // ============================================================================
 function InvoicesSection() {
@@ -854,6 +953,7 @@ const inputStyle = {
 // ============================================================================
 const SECTIONS = [
   { id: "home", label: "الرئيسية", icon: "🏠", subtitle: "ملخص شامل لحالة حسابك", render: HomeSection },
+  { id: "subscriptions", label: "اشتراكاتي", icon: "📦", subtitle: "باقاتك، حالة الاشتراك، وتجديدها", render: SubscriptionsSection },
   { id: "analytics", label: "التحليلات", icon: "📈", subtitle: "أرقام الوصول والتفاعل والمتابعين", render: AnalyticsSection },
   { id: "performance", label: "الأداء", icon: "🎯", subtitle: "مؤشرات الأداء الرئيسية مقابل أهدافك", render: PerformanceSection },
   { id: "campaigns", label: "الحملات الإعلانية", icon: "📢", subtitle: "حملاتك النشطة والمنتهية", render: CampaignsSection },

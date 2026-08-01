@@ -1,6 +1,7 @@
 // src/services/clientAuthService.js
 // نظام حسابات العملاء — منفصل عن authService.js (اللي بيدير دخول الأدمن فقط).
 import { supabase } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseAdminClient";
 
 // إنشاء حساب عميل جديد. الـ metadata بتتخزن على auth.users وبيقرأها
 // الـ trigger (handle_new_client في migration_clients.sql) عشان يعمل صف في جدول clients تلقائيًا.
@@ -72,7 +73,7 @@ export async function updateClientProfile({ fullName, phone, businessName }) {
 // قائمة كل العملاء — للأدمن بس (RLS: clients_select_admin في migration_analytics.sql).
 // بتُستخدم في لوحة "تحليلات العملاء" عشان الأدمن يختار العميل اللي هيضيفله تقرير.
 export async function fetchAllClientsForAdmin({ search = "" } = {}) {
-  let query = supabase.from("clients").select("*");
+  let query = supabaseAdmin.from("clients").select("*");
   if (search && search.trim()) {
     const term = search.trim();
     query = query.or(`full_name.ilike.%${term}%,business_name.ilike.%${term}%,phone.ilike.%${term}%`);
