@@ -2161,6 +2161,17 @@ function Navbar({ page, setPage, clientSession }) {
           <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn-primary !py-2 !px-5 text-xs">واتساب</a>
         </div>
         <div className="flex md:hidden items-center gap-2">
+          <button
+            onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
+            aria-label={clientSession ? "حسابي" : "تسجيل الدخول"}
+            className="w-9 h-9 flex items-center justify-center rounded-full transition-colors"
+            style={{ color: GOLD, background: "rgba(201,150,58,0.08)", border: "none" }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
+              <path d="M4 20c0-3.5 3.5-6 8-6s8 2.5 8 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
           <button className="text-xl leading-none w-9 h-9 flex items-center justify-center rounded-full transition-colors" style={{ color: GOLD, background: "rgba(201,150,58,0.08)", border: "none" }} onClick={() => setMenuOpen(m => !m)}>{menuOpen ? "✕" : "☰"}</button>
         </div>
       </nav>
@@ -2171,13 +2182,6 @@ function Navbar({ page, setPage, clientSession }) {
               onMouseEnter={e => { e.currentTarget.style.color = GOLD; }}
               onMouseLeave={e => { e.currentTarget.style.color = "var(--text-secondary)"; }}>{l.label}</button>
           ))}
-          <button
-            onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
-            className="block w-full text-right px-6 py-3 text-sm font-semibold transition-colors"
-            style={{ color: GOLD }}
-          >
-            {clientSession ? "حسابي" : "تسجيل الدخول"}
-          </button>
         </div>
       )}
     </>
