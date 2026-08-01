@@ -73,7 +73,15 @@ export const PORTAL_SECTIONS = [
       { key: "name", label: "اسم الملف", type: "text", default: "" },
       {
         key: "file_type", label: "نوع الملف", type: "select", default: "default",
-        options: ["pdf", "video", "image", "sheet", "default"],
+        options: ["pdf", "image", "video", "design", "sheet", "default"],
+        optionLabels: {
+          pdf: "📄 PDF",
+          image: "🖼️ صورة",
+          video: "🎬 فيديو",
+          design: "🎨 ملف تصميم (PSD / AI / Sketch / Figma...)",
+          sheet: "📊 جدول بيانات (Excel / CSV)",
+          default: "📁 ملف عام",
+        },
       },
       { key: "size_label", label: "الحجم", type: "text", default: "", placeholder: "مثال: 4.2 MB" },
       { key: "file_url", label: "رابط التحميل", type: "text", default: "", placeholder: "رابط مباشر للملف (Google Drive, Supabase Storage...)" },

@@ -182,6 +182,33 @@ export async function getFiles() {
 }
 
 // ----------------------------------------------------------------------------
+// تحميل حقيقي لملف من قسم "الملفات" (Blob) بدل فتح تاب جديد بس — بتفرض على
+// المتصفح ينزّل الملف باسمه الصحيح حتى لو الرابط من مصدر خارجي (Cross-Origin)،
+// طول ما الرابط بيسمح بالقراءة (buckets الـ public في Supabase بتسمح بيها).
+// لو حصل خطأ (مثلاً رابط خارجي مقفول CORS) بنرجع false عشان الواجهة تعمل
+// fallback بفتح الرابط في تاب جديد.
+// ----------------------------------------------------------------------------
+export async function downloadClientFile(url, fileName) {
+  if (!url) return false;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fileName || "";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ----------------------------------------------------------------------------
 // السكربتات — جدول حقيقي: content_scripts
 // ----------------------------------------------------------------------------
 export async function getScripts() {

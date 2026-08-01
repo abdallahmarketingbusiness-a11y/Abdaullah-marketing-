@@ -23,23 +23,54 @@ function formatBytes(bytes) {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+// أنواع ملفات التصميم الشائعة (فوتوشوب/إليستريتور/إنديزاين/سكتش/فيجما/زيروكس...)
+const DESIGN_EXTENSIONS = ["psd", "ai", "eps", "indd", "sketch", "fig", "xd", "cdr", "afdesign", "afphoto"];
+
 function guessFileType(name) {
   const ext = (name.split(".").pop() || "").toLowerCase();
   if (ext === "pdf") return "pdf";
-  if (["mp4", "mov", "webm", "avi"].includes(ext)) return "video";
-  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "image";
+  if (["mp4", "mov", "webm", "avi", "mkv", "m4v"].includes(ext)) return "video";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "heic"].includes(ext)) return "image";
+  if (DESIGN_EXTENSIONS.includes(ext)) return "design";
   if (["xlsx", "xls", "csv"].includes(ext)) return "sheet";
   return "default";
 }
 
+// قائمة الامتدادات المسموحة لواجهة اختيار الملف (input[type=file] accept)
+export const CLIENT_FILE_ACCEPT = [
+  ".pdf",
+  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".heic",
+  ".mp4", ".mov", ".webm", ".avi", ".mkv", ".m4v",
+  ...DESIGN_EXTENSIONS.map((e) => `.${e}`),
+  ".xlsx", ".xls", ".csv",
+].join(",");
+
+// حد أمان قبل الرفع (300MB) — لو الباقة الحالية في Supabase عندها حد أصغر
+// هيرجع خطأ من السيرفر برسالة واضحة تحت.
+const MAX_UPLOAD_BYTES = 300 * 1024 * 1024;
+
 export async function uploadClientFile(file) {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      `الملف كبير جدًا (${formatBytes(file.size)}). الحد الأقصى المسموح به ${formatBytes(MAX_UPLOAD_BYTES)}. ` +
+      `لو الملف أكبر من كدا، ارفعه على Google Drive وحط رابط المشاركة في حقل "رابط التحميل" تحت.`
+    );
+  }
   const ext = file.name.split(".").pop();
   const path = `${crypto.randomUUID()}.${ext}`;
   const { error } = await supabaseAdmin.storage.from(STORAGE_BUCKETS.CLIENT_FILES).upload(path, file, {
     cacheControl: "3600",
     upsert: false,
   });
-  if (error) throw error;
+  if (error) {
+    if (/payload too large|exceeded the maximum allowed size|maximum size/i.test(error.message || "")) {
+      throw new Error(
+        "الملف كبير جدًا على مساحة التخزين الحالية في Supabase. جرّب ملف أصغر، أو ارفعه على Google Drive " +
+        'وحط رابط المشاركة في حقل "رابط التحميل" تحت.'
+      );
+    }
+    throw error;
+  }
   const { data } = supabaseAdmin.storage.from(STORAGE_BUCKETS.CLIENT_FILES).getPublicUrl(path);
   return { url: data.publicUrl, sizeLabel: formatBytes(file.size), guessedType: guessFileType(file.name) };
 }

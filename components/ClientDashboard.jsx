@@ -33,8 +33,10 @@ import {
   getNotes,
   getInvoices,
   getNotifications,
+  downloadClientFile,
 } from "../services/clientPortalService";
 import Toast from "./Toast";
+import FilePreviewModal from "./FilePreviewModal";
 import { AnalyticsTrendChart, PostsCompareList, InsightList } from "./AnalyticsCharts";
 import { fetchMySubscriptions, requestRenewal } from "../services/subscriptionService";
 
@@ -567,44 +569,128 @@ function ReportsSection() {
 // ============================================================================
 // 6) الملفات
 // ============================================================================
-const FILE_ICONS = { pdf: "📄", video: "🎬", image: "🖼️", sheet: "📊", default: "📁" };
+const FILE_ICONS = { pdf: "📄", image: "🖼️", video: "🎬", design: "🎨", sheet: "📊", default: "📁" };
+const FILE_TYPE_LABELS = { pdf: "PDF", image: "صورة", video: "فيديو", design: "ملف تصميم", sheet: "جدول بيانات", default: "ملف" };
+// الأنواع اللي المتصفح يقدر يعرضها مباشرة في نافذة معاينة (بدون تحميل)
+const PREVIEWABLE_TYPES = ["image", "video", "pdf"];
+const FILE_FILTERS = [
+  { key: "all", label: "الكل", icon: "🗂️" },
+  { key: "pdf", label: "PDF", icon: "📄" },
+  { key: "image", label: "صور", icon: "🖼️" },
+  { key: "video", label: "فيديو", icon: "🎬" },
+  { key: "design", label: "تصميم", icon: "🎨" },
+];
+
+// بيضيف الامتداد الصحيح لاسم الملف لو ناقص، عشان التحميل يوصل باسم واضح
+function fileNameForDownload(f) {
+  if (/\.[a-zA-Z0-9]{1,5}$/.test(f.name || "")) return f.name;
+  const urlExt = (f.url || "").split(".").pop()?.split("?")[0];
+  return urlExt && urlExt.length <= 5 ? `${f.name || "ملف"}.${urlExt}` : f.name || "ملف";
+}
 
 function FilesSection() {
   const [items, setItems] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [previewFile, setPreviewFile] = useState(null);
+  const [toastMsg, setToastMsg] = useState("");
 
   useEffect(() => {
     getFiles().then(setItems);
   }, []);
 
+  async function handleDownload(f) {
+    if (!f.url) return;
+    const ok = await downloadClientFile(f.url, fileNameForDownload(f));
+    if (!ok) window.open(f.url, "_blank", "noopener,noreferrer");
+  }
+
   if (!items) return <SectionLoading />;
   if (items.length === 0) return <EmptyState text="لا توجد ملفات مرفوعة بعد." />;
 
+  const filtered = filter === "all" ? items : items.filter((f) => f.type === filter);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {items.map((f) => (
-        <Card key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 20 }}>{FILE_ICONS[f.type] || FILE_ICONS.default}</span>
-            <div>
-              <div style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{f.name}</div>
-              <div style={{ color: "#888", fontSize: 11 }}>{f.size} — {f.date}</div>
-            </div>
-          </div>
-          <a
-            href={f.url || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
+    <div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        {FILE_FILTERS.map((ft) => (
+          <button
+            key={ft.key}
+            onClick={() => setFilter(ft.key)}
             style={{
-              padding: "8px 16px", borderRadius: 10, border: "none",
-              background: `linear-gradient(135deg,${GOLD},${GOLD2})`, color: "#000",
-              fontWeight: 800, fontSize: 12, cursor: f.url ? "pointer" : "not-allowed",
-              opacity: f.url ? 1 : 0.5, textDecoration: "none", pointerEvents: f.url ? "auto" : "none",
+              padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+              border: `1px solid ${filter === ft.key ? GOLD : "rgba(255,255,255,0.1)"}`,
+              background: filter === ft.key ? "rgba(201,150,58,0.12)" : "none",
+              color: filter === ft.key ? GOLD3 : "#aaa",
             }}
           >
-            تحميل
-          </a>
-        </Card>
-      ))}
+            {ft.icon} {ft.label}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState text="لا توجد ملفات في هذا التصنيف." />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filtered.map((f) => {
+            const canPreview = PREVIEWABLE_TYPES.includes(f.type) && !!f.url;
+            return (
+              <Card key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                  <span style={{ fontSize: 20 }}>{FILE_ICONS[f.type] || FILE_ICONS.default}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: "#fff", fontWeight: 700, fontSize: 13, wordBreak: "break-word" }}>{f.name}</div>
+                    <div style={{ color: "#888", fontSize: 11, marginTop: 2 }}>
+                      {FILE_TYPE_LABELS[f.type] || FILE_TYPE_LABELS.default} — {f.size} — {f.date}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  {canPreview && (
+                    <button
+                      onClick={() => setPreviewFile(f)}
+                      style={{
+                        padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(201,150,58,0.35)",
+                        background: "none", color: GOLD3, fontWeight: 700, fontSize: 12, cursor: "pointer",
+                      }}
+                    >
+                      👁️ عرض
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDownload(f)}
+                    disabled={!f.url}
+                    style={{
+                      padding: "8px 16px", borderRadius: 10, border: "none",
+                      background: `linear-gradient(135deg,${GOLD},${GOLD2})`, color: "#000",
+                      fontWeight: 800, fontSize: 12, cursor: f.url ? "pointer" : "not-allowed", opacity: f.url ? 1 : 0.5,
+                    }}
+                  >
+                    ⬇️ تحميل
+                  </button>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {previewFile && (
+        <FilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+          onDownload={async (f) => {
+            const ok = await downloadClientFile(f.url, fileNameForDownload(f));
+            if (!ok) {
+              window.open(f.url, "_blank", "noopener,noreferrer");
+              setToastMsg("تم فتح الملف في نافذة جديدة لتحميله");
+              setTimeout(() => setToastMsg(""), 2500);
+            }
+          }}
+        />
+      )}
+
+      {toastMsg && <Toast toast={{ type: "success", text: toastMsg }} onClose={() => setToastMsg("")} />}
     </div>
   );
 }

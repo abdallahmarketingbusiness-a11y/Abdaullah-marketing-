@@ -16,6 +16,7 @@ import {
   deleteSectionRow,
   setSectionRowPublished,
   uploadClientFile,
+  CLIENT_FILE_ACCEPT,
 } from "../services/clientPortalAdminService";
 import Toast from "./Toast";
 
@@ -57,7 +58,7 @@ function FieldInput({ field, value, onChange }) {
     return (
       <select style={fieldStyle} value={value} onChange={(e) => onChange(e.target.value)}>
         {field.options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
+          <option key={opt} value={opt}>{field.optionLabels?.[opt] || opt}</option>
         ))}
       </select>
     );
@@ -113,18 +114,20 @@ function FileUploadField({ form, update }) {
         }}
       >
         <span style={{ color: GOLD3, fontSize: 12.5 }}>
-          {uploading ? "⏳ جاري الرفع..." : form.file_url ? "✅ تم الرفع — اضغط لتغيير الملف" : "اضغط لاختيار ملف من جهازك (PDF, صورة, فيديو, إكسل...)"}
+          {uploading ? "⏳ جاري الرفع..." : form.file_url ? "✅ تم الرفع — اضغط لتغيير الملف" : "اضغط لاختيار ملف من جهازك (PDF, صورة, فيديو, ملف تصميم PSD/AI/Sketch/Figma, إكسل...)"}
         </span>
         <input
           ref={inputRef}
           type="file"
+          accept={CLIENT_FILE_ACCEPT}
           style={{ display: "none" }}
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
       </div>
       {error && <p style={{ color: "#ff8080", fontSize: 11.5, marginTop: 6 }}>{error}</p>}
       <p style={{ color: "#777", fontSize: 11, marginTop: 6 }}>
-        أو سيب الحقول تحت فاضية واكتب رابط جاهز يدويًا في "رابط التحميل".
+        نوع الملف بيتحدد تلقائيًا من الامتداد (تقدر تغيّره من قائمة "نوع الملف" تحت لو حابب). أو سيب
+        الحقول تحت فاضية واكتب رابط جاهز يدويًا في "رابط التحميل" (مفيد للملفات الكبيرة جدًا).
       </p>
     </div>
   );
