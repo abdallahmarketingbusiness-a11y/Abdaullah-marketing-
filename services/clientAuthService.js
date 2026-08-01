@@ -50,6 +50,25 @@ export async function getClientProfile() {
   return data;
 }
 
+// تحديث بيانات العميل في جدول clients (الاسم / الهاتف / اسم النشاط التجاري).
+// بيستخدم في لوحة تحكم العميل (تبويب "الملف الشخصي").
+export async function updateClientProfile({ fullName, phone, businessName }) {
+  const session = await getCurrentClientSession();
+  if (!session) throw new Error("لازم تسجّل الدخول الأول.");
+  const { data, error } = await supabase
+    .from("clients")
+    .update({
+      full_name: fullName ?? "",
+      phone: phone ?? "",
+      business_name: businessName ?? "",
+    })
+    .eq("user_id", session.user.id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 // إرسال رابط إعادة تعيين كلمة المرور بالإيميل.
 // لازم يكون #reset-password مضاف في Supabase → Authentication → URL Configuration → Redirect URLs
 export async function requestPasswordReset(email) {
