@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { createPackage } from "../services/packagesService";
 import Toast from "../components/Toast";
 import PackagesGallery from "../components/PackagesGallery";
 import PackageDetails from "../components/PackageDetails";
-import AdminLogin from "../components/AdminLogin";
-import AdminDashboard from "../components/AdminDashboard";
 import PortfolioGallery from "../components/PortfolioGallery";
 import {
   fetchPortfolioItems,
@@ -18,13 +17,22 @@ import {
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
 import AnnouncementBar from "../components/AnnouncementBar";
-import ClientLogin from "../components/ClientLogin";
-import ClientSignup from "../components/ClientSignup";
-import ClientForgotPassword from "../components/ClientForgotPassword";
-import ClientResetPassword from "../components/ClientResetPassword";
-import ClientDashboard from "../components/ClientDashboard";
 import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
 import { fetchPublished } from "../services/contentService";
+
+// تحميل كسول (code-splitting) لصفحات الأدمن ولوحة العميل وتسجيل الدخول/الاشتراك.
+// الصفحات دي كلها موجودة خلف رابط hash مخصص (#admin, #dashboard, #login...)
+// وميظهروش أبدًا في الصفحة الرئيسية — فمفيش داعي إن الزائر العادي يحمّل
+// الكود بتاعهم (لوحة الأدمن لوحدها فيها آلاف الأسطر) وهو بس بيتصفح الموقع.
+// ده بيقلل حجم الـ JS اللي بيتحمّل أول ما حد يفتح الموقع، وده اللي بيسبب
+// الإحساس بالبطء/اللاج على الأجهزة الأضعف — من غير أي تغيير في الشكل نفسه.
+const AdminLogin = dynamic(() => import("../components/AdminLogin"));
+const AdminDashboard = dynamic(() => import("../components/AdminDashboard"));
+const ClientLogin = dynamic(() => import("../components/ClientLogin"));
+const ClientSignup = dynamic(() => import("../components/ClientSignup"));
+const ClientForgotPassword = dynamic(() => import("../components/ClientForgotPassword"));
+const ClientResetPassword = dynamic(() => import("../components/ClientResetPassword"));
+const ClientDashboard = dynamic(() => import("../components/ClientDashboard"));
 
 const GOLD = "#C9963A";
 const GOLD2 = "#E8BE6A";
