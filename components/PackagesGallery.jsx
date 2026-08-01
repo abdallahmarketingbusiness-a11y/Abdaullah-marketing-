@@ -1,8 +1,70 @@
 // src/pages/PackagesGallery.jsx
 import { useEffect, useState, useCallback } from "react";
 import { GOLD, GOLD2, GOLD3, BG, FONT } from "../config/theme";
-import { GALLERY } from "../config/packagesConfig";
+import { GALLERY, BASIC_PACKAGES } from "../config/packagesConfig";
 import { fetchPackages, fetchDistinctBusinessTypes } from "../services/packagesService";
+
+function BasicPackageCard({ pkg, onCreateNew }) {
+  return (
+    <div
+      onClick={onCreateNew}
+      className="transition duration-300 hover:-translate-y-1"
+      style={{
+        cursor: "pointer",
+        position: "relative",
+        borderRadius: 18,
+        border: `1px solid ${pkg.color}55`,
+        background: "rgba(255,255,255,0.02)",
+        padding: 22,
+        textAlign: "center",
+      }}
+    >
+      {pkg.badge && (
+        <span style={{ position: "absolute", top: 14, left: 14, fontSize: 10, fontWeight: 800, color: "#000", background: `linear-gradient(135deg,${pkg.color},${pkg.color}aa)`, padding: "3px 9px", borderRadius: 999 }}>
+          {pkg.badge}
+        </span>
+      )}
+      <div style={{ fontSize: 32, marginBottom: 6 }}>{pkg.icon}</div>
+      <h3 style={{ fontFamily: FONT, fontSize: 16, fontWeight: 900, color: "#fff", marginBottom: 4 }}>باقة {pkg.tier}</h3>
+      <div style={{ fontFamily: "var(--font-cinzel), serif", fontSize: 22, fontWeight: 900, color: pkg.color, marginBottom: 10 }}>
+        {pkg.price.toLocaleString()} <span style={{ fontSize: 11, color: "#666" }}>ج.م / شهر</span>
+      </div>
+      <div style={{ textAlign: "right", fontSize: 12, color: "#aaa", lineHeight: 1.9 }}>
+        {pkg.features.map((f, i) => (
+          <div key={i}>✓ {f}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AddCustomPackageCard({ onCreateNew }) {
+  return (
+    <div
+      onClick={onCreateNew}
+      className="transition duration-300 hover:-translate-y-1"
+      style={{
+        cursor: "pointer",
+        borderRadius: 18,
+        border: "1.5px dashed rgba(201,150,58,0.45)",
+        background: "rgba(201,150,58,0.04)",
+        padding: 22,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        minHeight: 190,
+      }}
+    >
+      <div style={{ width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 900, color: "#000", background: `linear-gradient(135deg,${GOLD},${GOLD2})` }}>
+        +
+      </div>
+      <div style={{ color: GOLD3, fontWeight: 800, fontSize: 14 }}>خصص باقتك بنفسك</div>
+      <div style={{ color: "#888", fontSize: 12, textAlign: "center" }}>مش لاقي اللي يناسبك؟ ابني باقتك من الصفر</div>
+    </div>
+  );
+}
 
 function SkeletonCard() {
   return (
@@ -182,12 +244,24 @@ export default function PackagesGallery({ onOpenPackage, onCreateNew, onBack }) 
 
         <h1 style={{ fontFamily: FONT, fontSize: "clamp(26px,4vw,38px)", fontWeight: 900, color: "#fff", marginBottom: 8 }}>
           <span style={{ background: `linear-gradient(135deg,${GOLD},${GOLD3})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            📁 الباقات المخصصة
+            📦 الباقات
           </span>
         </h1>
         <p style={{ color: "#888", fontSize: 14, marginBottom: 26 }}>
-          تصفّح باقات جاهزة صممها عملاء تانيين، أو ابدأ باقتك من الصفر
+          اختار باقة جاهزة، أو تصفّح باقات صممها عملاء تانيين، أو ابدأ باقتك من الصفر
         </p>
+
+        {/* الباقات الأساسية */}
+        <h2 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 16 }}>الباقات الأساسية</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-14">
+          {BASIC_PACKAGES.map((p) => (
+            <BasicPackageCard key={p.id} pkg={p} onCreateNew={onCreateNew} />
+          ))}
+          <AddCustomPackageCard onCreateNew={onCreateNew} />
+        </div>
+
+        <h2 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 8 }}>الباقات المخصصة</h2>
+        <p style={{ color: "#888", fontSize: 13, marginBottom: 18 }}>باقات مخصصة صممها عملاء تانيين — تقدر تستخدمها كما هي أو تعدّل عليها</p>
 
         {/* كود خصم — بيتحفظ ويترشّح تلقائيًا مع أي باقة هتختارها وتشترك فيها */}
         <div
