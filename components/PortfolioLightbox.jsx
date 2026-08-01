@@ -83,6 +83,8 @@ export default function PortfolioLightbox({ item, onClose }) {
               <img
                 key={i}
                 src={img.image_url}
+                loading="lazy"
+                decoding="async"
                 onClick={() => {
                   setActiveIndex(i);
                   setZoomed(false);
