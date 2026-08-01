@@ -155,6 +155,13 @@ export async function getCampaigns() {
     budget: money(c.budget),
     spend: money(c.spend),
     reach: Number(c.reach || 0).toLocaleString("en-US"),
+    impressions: Number(c.impressions || 0).toLocaleString("en-US"),
+    ctr: `${Number(c.ctr || 0).toFixed(2)}%`,
+    cpc: money(c.cpc),
+    leads: Number(c.leads || 0).toLocaleString("en-US"),
+    roi: `${Number(c.roi || 0).toFixed(1)}%`,
+    roiRaw: Number(c.roi || 0),
+    notes: c.notes || "",
   }));
 }
 

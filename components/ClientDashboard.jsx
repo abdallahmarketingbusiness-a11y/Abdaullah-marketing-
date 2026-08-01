@@ -384,10 +384,11 @@ function HomeSection({ profile, notify }) {
   );
 }
 
-function MiniStat({ label, value }) {
+function MiniStat({ label, value, tone }) {
+  const color = tone === "up" ? "#4ade80" : tone === "down" ? "#ff6b6b" : GOLD2;
   return (
     <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
-      <div style={{ color: GOLD2, fontWeight: 900, fontSize: 14 }}>{value}</div>
+      <div style={{ color, fontWeight: 900, fontSize: 14 }}>{value}</div>
       <div style={{ color: "#888", fontSize: 10.5, marginTop: 2 }}>{label}</div>
     </div>
   );
@@ -506,16 +507,29 @@ function CampaignsSection() {
     <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 14 }}>
       {items.map((c) => (
         <Card key={c.id}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{c.name}</div>
             <Badge text={c.status} />
           </div>
-          <div style={{ color: "#888", fontSize: 12, marginBottom: 10 }}>{c.platform}</div>
-          <div className="grid grid-cols-3" style={{ gap: 8, textAlign: "center" }}>
+          <div style={{ color: "#888", fontSize: 12, marginBottom: 12 }}>{c.platform}</div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 8, textAlign: "center" }}>
             <MiniStat label="الميزانية" value={c.budget} />
             <MiniStat label="الإنفاق" value={c.spend} />
-            <MiniStat label="الوصول" value={c.reach} />
+            <MiniStat label="الوصول (Reach)" value={c.reach} />
+            <MiniStat label="مرات الظهور" value={c.impressions} />
+            <MiniStat label="CTR" value={c.ctr} />
+            <MiniStat label="CPC" value={c.cpc} />
+            <MiniStat label="Leads" value={c.leads} />
+            <MiniStat label="ROI" value={c.roi} tone={c.roiRaw > 0 ? "up" : c.roiRaw < 0 ? "down" : undefined} />
           </div>
+
+          {c.notes && (
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ color: "#666", fontSize: 10.5, marginBottom: 4, fontWeight: 700 }}>📝 ملاحظات</div>
+              <p style={{ color: "#ccc", fontSize: 12.5, lineHeight: 1.8 }}>{c.notes}</p>
+            </div>
+          )}
         </Card>
       ))}
     </div>
