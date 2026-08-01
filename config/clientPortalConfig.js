@@ -141,23 +141,10 @@ export const PORTAL_SECTIONS = [
       },
     ],
   },
-  {
-    key: "notifications",
-    label: "الإشعارات",
-    icon: "🔔",
-    table: "notifications",
-    dateField: "created_at",
-    titleField: "title",
-    fields: [
-      { key: "title", label: "نص الإشعار", type: "text", default: "" },
-      { key: "notif_date", label: "التاريخ", type: "date", default: "" },
-      {
-        key: "notif_type", label: "النوع", type: "select", default: "default",
-        options: ["invoice", "report", "script", "campaign", "default"],
-      },
-      { key: "is_read", label: "مقروء بالفعل؟", type: "checkbox", default: false },
-    ],
-  },
+  // ملحوظة: قسم "الإشعارات" اتشال من هنا — بقى ليه تبويب مخصص في لوحة
+  // الأدمن ("🔔 الإشعارات" — components/NotificationsManager.jsx) بيدعم
+  // حاجات مش موجودة في النظام العام هنا: الإرسال لكل العملاء دفعة واحدة،
+  // والجدولة. شوف services/notificationsAdminService.js.
 ];
 
 export function getSectionConfig(key) {

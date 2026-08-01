@@ -24,7 +24,13 @@ export async function signUpClient({ email, password, fullName, phone, businessN
 
 export async function signInClient(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) {
+    // Supabase بيرفض تسجيل دخول أي حساب متوقف (banned) برسالة زي دي تلقائيًا
+    if (/banned|suspended/i.test(error.message)) {
+      throw new Error("هذا الحساب تم إيقافه من الإدارة. تواصل مع الدعم لمزيد من التفاصيل.");
+    }
+    throw error;
+  }
   return data.session;
 }
 

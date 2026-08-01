@@ -30,3 +30,16 @@ export async function fetchActivityLog({ limit = 50 } = {}) {
   if (error) throw error;
   return data || [];
 }
+
+// سجل نشاط مرتبط بعنصر محدد (مثلاً: كل العمليات اللي اتعملت على عميل معيّن)
+export async function fetchActivityLogForEntity({ entityType, entityId, limit = 50 }) {
+  const { data, error } = await supabaseAdmin
+    .from(ACTIVITY_LOG_TABLE)
+    .select("*")
+    .eq("entity_type", entityType)
+    .eq("entity_id", String(entityId))
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
