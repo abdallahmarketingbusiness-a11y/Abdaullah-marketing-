@@ -24,6 +24,7 @@ import ClientForgotPassword from "../components/ClientForgotPassword";
 import ClientResetPassword from "../components/ClientResetPassword";
 import ClientDashboard from "../components/ClientDashboard";
 import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
+import { fetchPublished } from "../services/contentService";
 
 const GOLD = "#C9963A";
 const GOLD2 = "#E8BE6A";
@@ -240,7 +241,7 @@ function LogoSVG({ size = 110 }) {
 
 function HeroPage({ setPage }) {
   return (
-    <section dir="rtl" className="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-28 pb-16 relative overflow-hidden" style={{ background: "#060606" }}>
+    <section dir="rtl" className="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-28 pb-16 relative overflow-hidden" style={{ background: "transparent" }}>
       <div className="absolute pointer-events-none" style={{ top: "8%", left: "50%", transform: "translateX(-50%)", width: 700, height: 500, background: "radial-gradient(ellipse, rgba(201,150,58,0.12) 0%, transparent 65%)" }} />
       <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
       <Particles />
@@ -289,7 +290,7 @@ function HeroPage({ setPage }) {
 
 function ServicesSection({ setPage }) {
   return (
-    <section id="services" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "#0E0E0E" }}>
+    <section id="services" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
         <SectionLabel>OUR SERVICES</SectionLabel>
         <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>خدماتنا الاحترافية</h2>
@@ -355,7 +356,7 @@ function PortfolioSection() {
   }
 
   return (
-    <section id="portfolio" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "#060606" }}>
+    <section id="portfolio" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-8">
         <SectionLabel>MY WORK</SectionLabel>
         <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>أعمالي الحقيقية</h2>
@@ -449,7 +450,7 @@ function PortfolioSection() {
 
 function TipsSection() {
   return (
-    <section id="tips" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "#0E0E0E" }}>
+    <section id="tips" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
         <SectionLabel>TIPS & INSIGHTS</SectionLabel>
         <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>نصائح للمشاريع</h2>
@@ -1441,7 +1442,7 @@ function PricingSection({ setPage }) {
 
 function WhySection() {
   return (
-    <section id="why" dir="rtl" className="py-24 px-6 md:px-16" style={{ background: "#060606" }}>
+    <section id="why" dir="rtl" className="py-24 px-6 md:px-16" style={{ background: "transparent" }}>
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16">
         <Reveal className="flex-shrink-0">
           <div className="relative w-52 h-52 flex items-center justify-center">
@@ -1484,7 +1485,7 @@ function WhySection() {
 
 function ProcessSection() {
   return (
-    <section id="process" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "#0E0E0E" }}>
+    <section id="process" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-16">
         <SectionLabel>HOW WE WORK</SectionLabel>
         <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>آلية العمل</h2>
@@ -1531,7 +1532,7 @@ const caseStudyServices = [
 
 function FeaturedProjectSection() {
   return (
-    <section id="case-study" dir="rtl" aria-labelledby="case-study-heading" className="py-24 px-6 md:px-10" style={{ background: "#0E0E0E" }}>
+    <section id="case-study" dir="rtl" aria-labelledby="case-study-heading" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-6">
         <SectionLabel>FEATURED CASE STUDY</SectionLabel>
         <h2 id="case-study-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>آخر أعمالنا</h2>
@@ -1610,7 +1611,7 @@ const testimonial = {
 
 function TestimonialsSection() {
   return (
-    <section id="testimonials" dir="rtl" aria-labelledby="testimonials-heading" className="py-24 px-6 md:px-10" style={{ background: "#060606" }}>
+    <section id="testimonials" dir="rtl" aria-labelledby="testimonials-heading" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
         <SectionLabel>CLIENT VOICE</SectionLabel>
         <h2 id="testimonials-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "'Cinzel', serif" }}>آراء العملاء</h2>
@@ -1830,7 +1831,7 @@ function ContactPage() {
     { href: "https://www.instagram.com/3bdullah.dyaa?igsh=MTFnMDM4NHUxemc3cQ==", icon: "🌟", label: "INSTAGRAM PERSONAL", name: "@3bdullah.dyaa", colorBg: "rgba(201,150,58,0.1)" },
   ];
   return (
-    <div dir="rtl" className="min-h-screen flex items-center py-24 px-6" style={{ background: "#0E0E0E" }}>
+    <div dir="rtl" className="min-h-screen flex items-center py-24 px-6" style={{ background: "transparent" }}>
       <div className="max-w-lg mx-auto w-full">
         <Reveal className="text-center mb-12">
           <SectionLabel>CONTACT US</SectionLabel>
@@ -1868,6 +1869,207 @@ function ContactPage() {
   );
 }
 
+function PageHeader({ label, title, desc }) {
+  return (
+    <Reveal className="text-center mb-14 max-w-2xl mx-auto">
+      <SectionLabel>{label}</SectionLabel>
+      <h1 className="text-3xl md:text-5xl font-black tracking-wide mt-3 mb-4" style={{ fontFamily: "'Cinzel', serif", color: "var(--text-primary)" }}>{title}</h1>
+      <p className="text-sm md:text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>{desc}</p>
+    </Reveal>
+  );
+}
+
+function EmptyState({ text }) {
+  return (
+    <div className="text-center py-16">
+      <p className="text-sm" style={{ color: "var(--text-muted)" }}>{text}</p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="text-center py-16">
+      <p className="text-sm" style={{ color: "var(--text-muted)" }}>جاري التحميل...</p>
+    </div>
+  );
+}
+
+function CaseStudiesPage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    fetchPublished("caseStudies").then((data) => { if (alive) setItems(data); }).finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  return (
+    <div dir="rtl" className="min-h-screen px-6 py-28 relative">
+      <div className="max-w-5xl mx-auto">
+        <PageHeader label="CASE STUDIES" title="دراسات الحالة" desc="نتائج حقيقية لعملاء حقيقيين — نستعرض بعض قصص النجاح اللي حققناها من خلال استراتيجيات تسويقية مدروسة." />
+        {loading ? (
+          <LoadingState />
+        ) : items.length === 0 ? (
+          <EmptyState text="لسه مفيش دراسات حالة منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            {items.map((cs, i) => (
+              <Reveal key={cs.id} delay={i * 90}>
+                <div className="card-pro rounded-2xl overflow-hidden h-full flex flex-col">
+                  {cs.image_url && (
+                    <div className="aspect-video w-full overflow-hidden">
+                      <img src={cs.image_url} alt={cs.client_name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="p-7 flex flex-col flex-1">
+                    <div className="flex items-start justify-between mb-4">
+                      {cs.industry && <span className="badge-gold">{cs.industry}</span>}
+                      {cs.badge_stat && <span className="text-2xl font-black" style={{ color: "var(--gold-light)", fontFamily: "'Cinzel', serif" }}>{cs.badge_stat}</span>}
+                    </div>
+                    <h3 className="text-lg font-black mb-1" style={{ color: "var(--text-primary)" }}>{cs.client_name}</h3>
+                    {cs.metric_label && <p className="text-xs font-semibold mb-3" style={{ color: "var(--gold)" }}>{cs.metric_label}</p>}
+                    <p className="text-sm leading-relaxed flex-1 mb-4" style={{ color: "var(--text-secondary)" }}>{cs.summary}</p>
+                    {Array.isArray(cs.tags) && cs.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {cs.tags.map((t, ti) => (
+                          <span key={ti} className="text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>{t}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        )}
+        <Reveal delay={200} className="text-center mt-14">
+          <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>عايز نتايج زي دي لبراندك؟</p>
+          <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn-primary">احجز استشارة مجانية</a>
+        </Reveal>
+      </div>
+    </div>
+  );
+}
+
+function PostsPage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  useEffect(() => {
+    let alive = true;
+    fetchPublished("socialPosts").then((data) => { if (alive) setItems(data); }).finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  const filtered = items.filter((p) => filter === "all" || p.post_type === filter);
+  const FILTERS = [
+    { id: "all", label: "الكل" },
+    { id: "post", label: "بوستات" },
+    { id: "video", label: "فيديوهات" },
+  ];
+
+  return (
+    <div dir="rtl" className="min-h-screen px-6 py-28 relative">
+      <div className="max-w-5xl mx-auto">
+        <PageHeader label="OUR WORK" title="منشوراتنا" desc="نماذج من المحتوى اللي بننتجه لعملائنا — بوستات وفيديوهات على منصات السوشيال ميديا المختلفة." />
+        <Reveal className="flex items-center justify-center gap-2 mb-10">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className="text-xs font-bold px-4 py-2 rounded-full transition-all"
+              style={{
+                border: `1px solid ${filter === f.id ? "var(--gold)" : "var(--border)"}`,
+                background: filter === f.id ? "rgba(201,150,58,0.14)" : "transparent",
+                color: filter === f.id ? "var(--gold-light)" : "var(--text-muted)",
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </Reveal>
+        {loading ? (
+          <LoadingState />
+        ) : filtered.length === 0 ? (
+          <EmptyState text="لسه مفيش منشورات منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
+        ) : (
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
+            {filtered.map((p, i) => (
+              <Reveal key={p.id} delay={i * 60}>
+                <div className="card-pro rounded-2xl overflow-hidden">
+                  <div className="aspect-square flex items-center justify-center relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.14), rgba(201,150,58,0.03))" }}>
+                    {p.media_url ? (
+                      <img src={p.media_url} alt={p.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-4xl opacity-40">✦</span>
+                    )}
+                    {p.post_type === "video" && (
+                      <span className="absolute inset-0 flex items-center justify-center text-3xl" style={{ background: "rgba(0,0,0,0.25)" }}>▶️</span>
+                    )}
+                    <span className="absolute top-3 right-3 badge-gold">{p.platform}</span>
+                  </div>
+                  <div className="p-4">
+                    <span className="text-[11px] font-bold tracking-wider" style={{ color: "var(--gold)" }}>{p.post_type === "video" ? "فيديو" : "بوست"}</span>
+                    <h3 className="text-sm font-bold mt-1 mb-1" style={{ color: "var(--text-primary)" }}>{p.title}</h3>
+                    {p.stat_label && <p className="text-xs" style={{ color: "var(--text-muted)" }}>{p.stat_label}</p>}
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        )}
+        <Reveal delay={200} className="text-center mt-14">
+          <a href="https://www.instagram.com/3bdullah.marketing?igsh=MTEzMXFiZTh2cG81cQ==" target="_blank" rel="noreferrer" className="btn-outline">تابعنا على انستجرام</a>
+        </Reveal>
+      </div>
+    </div>
+  );
+}
+
+function BlogPage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    fetchPublished("blogPosts").then((data) => { if (alive) setItems(data); }).finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  return (
+    <div dir="rtl" className="min-h-screen px-6 py-28 relative">
+      <div className="max-w-4xl mx-auto">
+        <PageHeader label="BLOG" title="المدونة" desc="مقالات ونصائح في عالم التسويق الرقمي والبراندنج، بنشاركها معاك بشكل دوري." />
+        {loading ? (
+          <LoadingState />
+        ) : items.length === 0 ? (
+          <EmptyState text="لسه مفيش مقالات منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
+        ) : (
+          <div className="space-y-5">
+            {items.map((b, i) => (
+              <Reveal key={b.id} delay={i * 70}>
+                <div className="card-pro rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-5">
+                  <div className="w-full sm:w-28 h-20 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.16), rgba(201,150,58,0.04))", color: "var(--gold)" }}>
+                    {b.cover_image_url ? <img src={b.cover_image_url} alt={b.title} className="w-full h-full object-cover" /> : "✎"}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      {b.category && <span className="badge-gold">{b.category}</span>}
+                      <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{b.read_time_minutes || 4} دقائق قراءة</span>
+                    </div>
+                    <h3 className="text-base font-black mb-1" style={{ color: "var(--text-primary)" }}>{b.title}</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{b.excerpt}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Navbar({ page, setPage, clientSession }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1876,21 +2078,22 @@ function Navbar({ page, setPage, clientSession }) {
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
+  const DIRECT_PAGES = ["home", "services", "gallery", "portfolio-gallery", "case-studies", "posts", "blog", "about", "contact"];
   const links = [
     { id: "home", label: "الرئيسية" },
-    { id: "services-anchor", label: "الخدمات" },
-    { id: "portfolio-anchor", label: "أعمالي" },
-    { id: "tips-anchor", label: "نصائح" },
+    { id: "services", label: "الخدمات" },
+    { id: "gallery", label: "الباقات" },
+    { id: "portfolio-gallery", label: "معرض الأعمال" },
+    { id: "case-studies", label: "دراسات الحالة" },
+    { id: "posts", label: "المنشورات" },
+    { id: "blog", label: "المدونة" },
     { id: "about", label: "من نحن" },
     { id: "contact", label: "تواصل معنا" },
   ];
   const handleNav = (id) => {
     setMenuOpen(false);
-    if (id === "about" || id === "contact") {
+    if (DIRECT_PAGES.includes(id)) {
       setPage(id);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (id === "home") {
-      setPage("home");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       setPage("home");
@@ -2008,6 +2211,12 @@ export default function App() {
       else if (route === "forgot-password") setPage("forgot-password");
       else if (route === "reset-password") setPage("reset-password");
       else if (route === "dashboard") setPage("dashboard");
+      else if (route === "services") setPage("services");
+      else if (route === "case-studies") setPage("case-studies");
+      else if (route === "posts") setPage("posts");
+      else if (route === "blog") setPage("blog");
+      else if (route === "about") setPage("about");
+      else if (route === "contact") setPage("contact");
     }
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
@@ -2015,7 +2224,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery", "login", "signup", "forgot-password", "reset-password", "dashboard"].includes(page)) {
+    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery", "login", "signup", "forgot-password", "reset-password", "dashboard", "services", "case-studies", "posts", "blog", "about", "contact"].includes(page)) {
       const hash =
         page === "package-details" && selectedPackageId
           ? `#package-details?id=${selectedPackageId}`
@@ -2090,7 +2299,7 @@ export default function App() {
     <>
       <style>{`
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Cairo, sans-serif; background: #060606; overflow-x: hidden; }
+        body { font-family: Cairo, sans-serif; overflow-x: hidden; }
         @keyframes floatUp { 0% { opacity:0; transform:translateY(100vh); } 10% { opacity:0.6; } 90% { opacity:0.2; } 100% { opacity:0; transform:translateY(-20px); } }
         @keyframes fadeDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
@@ -2117,6 +2326,14 @@ export default function App() {
           <ProcessSection />
         </>
       )}
+      {page === "services" && (
+        <div className="pt-20">
+          <ServicesSection setPage={setPage} />
+        </div>
+      )}
+      {page === "case-studies" && <CaseStudiesPage />}
+      {page === "posts" && <PostsPage />}
+      {page === "blog" && <BlogPage />}
       {page === "about" && <AboutPage setPage={setPage} />}
       {page === "contact" && <ContactPage />}
       {page === "builder" && <BuilderPage setPage={setPage} initialData={builderInitialData} />}
