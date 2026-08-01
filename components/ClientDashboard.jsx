@@ -8,9 +8,11 @@
 // 3) ضيفه لمصفوفة SECTIONS آخر الملف: id فريد، label، icon، render.
 // خلاص، هيظهر تلقائيًا في القائمة الجانبية وشريط الموبايل من غير أي تعديل تاني.
 //
-// ملاحظة: أقسام (التحليلات/الحملات/التقارير/الملفات/السكربتات/الملاحظات/الفواتير/الإشعارات)
-// بتعرض حاليًا بيانات تجريبية (Sample Data) جاهية الشكل والتصميم، لحد ما يتم ربطها بجداول حقيقية
-// في قاعدة البيانات — التفاصيل موجودة في تعليقات src/services/clientPortalService.js.
+// كل الأقسام (الرئيسية/التحليلات/الأداء/الحملات/التقارير/الملفات/السكربتات/
+// الملاحظات/الفواتير/الإشعارات) بتعرض بيانات حقيقية من Supabase. الأدمن بيضيفها
+// من لوحة السوبر أدمن → تبويب "بيانات لوحة العميل" (وتبويب "تحليلات العملاء"
+// للتحليلات تحديدًا). التفاصيل في src/services/clientPortalService.js
+// و sql/migration_client_portal.sql.
 
 import { useEffect, useMemo, useState } from "react";
 import { GOLD, GOLD2, GOLD3, BG, FONT } from "../config/theme";
@@ -318,7 +320,11 @@ function HomeSection({ profile, notify }) {
             <Badge text={subscription.status} />
           </div>
           <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{subscription.planName}</div>
-          <div style={{ color: "#888", fontSize: 11.5, marginTop: 6 }}>يتجدد بتاريخ {subscription.renewsAt} ({subscription.daysLeft} يومًا متبقية)</div>
+          <div style={{ color: "#888", fontSize: 11.5, marginTop: 6 }}>
+            {subscription.renewsAt && subscription.renewsAt !== "غير محدد"
+              ? `يتجدد بتاريخ ${subscription.renewsAt}${typeof subscription.daysLeft === "number" ? ` (${subscription.daysLeft} يومًا متبقية)` : ""}`
+              : "لا يوجد تاريخ تجديد محدد"}
+          </div>
         </Card>
 
         {/* آخر تقرير */}
@@ -357,9 +363,9 @@ function HomeSection({ profile, notify }) {
           <div style={{ color: "#888", fontSize: 12, marginBottom: 10 }}>📊 ملخص الأداء</div>
           <div className="grid grid-cols-2" style={{ gap: 8 }}>
             <MiniStat label="الوصول" value={performanceSummary.reach.toLocaleString("en-US")} />
-            <MiniStat label="النمو" value={`${performanceSummary.growthPercent}%`} />
+            <MiniStat label="نمو المتابعين" value={performanceSummary.followersGrowth} />
             <MiniStat label="التفاعل" value={`${performanceSummary.engagementRate}%`} />
-            <MiniStat label="عملاء محتملين" value={performanceSummary.leads} />
+            <MiniStat label="حملات نشطة" value={performanceSummary.activeCampaigns} />
           </div>
         </Card>
       </div>
@@ -582,15 +588,19 @@ function FilesSection() {
               <div style={{ color: "#888", fontSize: 11 }}>{f.size} — {f.date}</div>
             </div>
           </div>
-          <button
+          <a
+            href={f.url || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               padding: "8px 16px", borderRadius: 10, border: "none",
               background: `linear-gradient(135deg,${GOLD},${GOLD2})`, color: "#000",
-              fontWeight: 800, fontSize: 12, cursor: "pointer",
+              fontWeight: 800, fontSize: 12, cursor: f.url ? "pointer" : "not-allowed",
+              opacity: f.url ? 1 : 0.5, textDecoration: "none", pointerEvents: f.url ? "auto" : "none",
             }}
           >
             تحميل
-          </button>
+          </a>
         </Card>
       ))}
     </div>
