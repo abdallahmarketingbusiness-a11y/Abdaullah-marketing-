@@ -18,6 +18,12 @@ import {
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
 import AnnouncementBar from "../components/AnnouncementBar";
+import ClientLogin from "../components/ClientLogin";
+import ClientSignup from "../components/ClientSignup";
+import ClientForgotPassword from "../components/ClientForgotPassword";
+import ClientResetPassword from "../components/ClientResetPassword";
+import ClientDashboard from "../components/ClientDashboard";
+import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
 
 const GOLD = "#C9963A";
 const GOLD2 = "#E8BE6A";
@@ -1862,7 +1868,7 @@ function ContactPage() {
   );
 }
 
-function Navbar({ page, setPage }) {
+function Navbar({ page, setPage, clientSession }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
@@ -1911,6 +1917,13 @@ function Navbar({ page, setPage }) {
           ))}
         </ul>
         <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
+            className="text-xs font-semibold tracking-wider px-4 py-2 rounded-full transition-colors"
+            style={{ color: GOLD, border: "1px solid rgba(201,150,58,0.35)", background: "transparent" }}
+          >
+            {clientSession ? "حسابي" : "تسجيل الدخول"}
+          </button>
           <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn-primary !py-2 !px-5 text-xs">واتساب</a>
         </div>
         <div className="flex md:hidden items-center gap-2">
@@ -1924,6 +1937,13 @@ function Navbar({ page, setPage }) {
               onMouseEnter={e => { e.currentTarget.style.color = GOLD; }}
               onMouseLeave={e => { e.currentTarget.style.color = "var(--text-secondary)"; }}>{l.label}</button>
           ))}
+          <button
+            onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
+            className="block w-full text-right px-6 py-3 text-sm font-semibold transition-colors"
+            style={{ color: GOLD }}
+          >
+            {clientSession ? "حسابي" : "تسجيل الدخول"}
+          </button>
         </div>
       )}
     </>
@@ -1965,6 +1985,8 @@ export default function App() {
   const [selectedPackageId, setSelectedPackageId] = useState(null);
   const [builderInitialData, setBuilderInitialData] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [clientSession, setClientSession] = useState(null);
+  const [clientAuthChecked, setClientAuthChecked] = useState(false);
 
   // نظام الباقات المخصصة يستخدم روابط hash (#gallery, #admin, #package-details?id=..)
   // عشان صفحة /admin تكون قابلة للوصول برابط مباشر وغير موجودة في القائمة العادية،
@@ -1981,6 +2003,11 @@ export default function App() {
         setPage("package-details");
       } else if (route === "admin") setPage("admin");
       else if (route === "portfolio-gallery") setPage("portfolio-gallery");
+      else if (route === "login") setPage("login");
+      else if (route === "signup") setPage("signup");
+      else if (route === "forgot-password") setPage("forgot-password");
+      else if (route === "reset-password") setPage("reset-password");
+      else if (route === "dashboard") setPage("dashboard");
     }
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
@@ -1988,7 +2015,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery"].includes(page)) {
+    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery", "login", "signup", "forgot-password", "reset-password", "dashboard"].includes(page)) {
       const hash =
         page === "package-details" && selectedPackageId
           ? `#package-details?id=${selectedPackageId}`
@@ -2010,6 +2037,20 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [page]);
+
+  // نظام حسابات العملاء: يتحقق من وجود جلسة دخول شغالة أول ما الموقع يفتح،
+  // ويفضل يسمع لأي تغيير (دخول/خروج/تحديث توكن) عشان يحدّث الواجهة (Navbar وغيره)
+  useEffect(() => {
+    getCurrentClientSession().then((session) => {
+      setClientSession(session);
+      setClientAuthChecked(true);
+    });
+    const unsubscribe = onClientAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") return; // بتتعالج جوه صفحة reset-password نفسها
+      setClientSession(session);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const setMeta = (attr, key, content) => {
@@ -2062,8 +2103,8 @@ export default function App() {
         .animate-spin-slow { animation: spin-slow 20s linear infinite; }
       `}</style>
       <WAButton />
-      {page !== "admin" && <AnnouncementBar />}
-      <Navbar page={page} setPage={setPage} />
+      {!["admin", "login", "signup", "forgot-password", "reset-password"].includes(page) && <AnnouncementBar />}
+      <Navbar page={page} setPage={setPage} clientSession={clientSession} />
       {page === "home" && (
         <>
           <HeroPage setPage={setPage} />
@@ -2098,6 +2139,32 @@ export default function App() {
       )}
 
       {page === "portfolio-gallery" && <PortfolioGallery />}
+
+      {page === "login" && (
+        <ClientLogin
+          setPage={setPage}
+          onSuccess={(session) => { setClientSession(session); setPage("dashboard"); }}
+        />
+      )}
+      {page === "signup" && (
+        <ClientSignup
+          setPage={setPage}
+          onSuccess={(session) => { setClientSession(session); setPage("dashboard"); }}
+        />
+      )}
+      {page === "forgot-password" && <ClientForgotPassword setPage={setPage} />}
+      {page === "reset-password" && <ClientResetPassword setPage={setPage} />}
+      {page === "dashboard" && clientAuthChecked && !clientSession && (
+        <ClientLogin
+          setPage={setPage}
+          onSuccess={(session) => { setClientSession(session); setPage("dashboard"); }}
+        />
+      )}
+      {page === "dashboard" && clientSession && (
+        <ClientDashboard
+          onLogout={async () => { await signOutClient(); setClientSession(null); setPage("home"); }}
+        />
+      )}
 
       {page === "admin" && !isAdmin && (
         <AdminLogin onSuccess={() => setIsAdmin(true)} />
