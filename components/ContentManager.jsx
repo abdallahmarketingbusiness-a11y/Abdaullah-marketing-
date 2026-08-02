@@ -17,6 +17,7 @@ import ImageDropzone from "./ImageDropzone";
 import GalleryDropzone from "./GalleryDropzone";
 import Toast from "./Toast";
 import { broadcastNotificationToAll } from "../services/notificationsAdminService";
+import { buildPostNotificationTitle } from "../lib/notificationTemplates";
 
 const fieldStyle = {
   width: "100%",
@@ -190,7 +191,7 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
       // إشعار تلقائي لكل العملاء عند نشر منشور جديد (لأول مرة)
       if (entity === "sitePosts" && payload.status === CONTENT_STATUS.PUBLISHED && !wasPublished) {
         broadcastNotificationToAll({
-          title: `🆕 منشور جديد: ${payload.title}`,
+          title: buildPostNotificationTitle({ category: payload.category, title: payload.title }),
           notifType: "campaign",
           notifDate: new Date().toISOString().slice(0, 10),
         }).catch(() => {}); // فشل الإشعار مايوقفش حفظ المنشور
@@ -325,7 +326,7 @@ function EntitySection({ entity }) {
     setItems((list) => list.map((p) => (p.id === item.id ? updated : p)));
     if (entity === "sitePosts" && next === CONTENT_STATUS.PUBLISHED) {
       broadcastNotificationToAll({
-        title: `🆕 منشور جديد: ${updated.title}`,
+        title: buildPostNotificationTitle({ category: updated.category, title: updated.title }),
         notifType: "campaign",
         notifDate: new Date().toISOString().slice(0, 10),
       }).catch(() => {});

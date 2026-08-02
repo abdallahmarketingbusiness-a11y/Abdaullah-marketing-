@@ -242,7 +242,59 @@ export async function getInvoices() {
 // ----------------------------------------------------------------------------
 // الإشعارات — جدول حقيقي: notifications
 // ----------------------------------------------------------------------------
+function mapNotificationRow(n) {
+  return { id: n.id, title: n.title, date: formatDate(n.notif_date || n.created_at), type: n.notif_type, read: n.is_read };
+}
+
 export async function getNotifications() {
   const rows = await fetchPublished("notifications", "created_at");
-  return rows.map((n) => ({ id: n.id, title: n.title, date: formatDate(n.notif_date || n.created_at), type: n.notif_type, read: n.is_read }));
+  return rows.map(mapNotificationRow);
+}
+
+// تعليم إشعار واحد كمقروء (العميل يقدر يحدّث إشعاراته هو بس — شوف
+// sql/patch_notifications_realtime_and_read.sql)
+export async function markNotificationRead(id) {
+  const clientId = await currentClientId();
+  if (!clientId) return false;
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", id)
+    .eq("client_id", clientId);
+  if (error) throw error;
+  return true;
+}
+
+// تعليم كل إشعارات العميل الحالي كمقروءة دفعة واحدة
+export async function markAllNotificationsRead() {
+  const clientId = await currentClientId();
+  if (!clientId) return false;
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("client_id", clientId)
+    .eq("is_read", false);
+  if (error) throw error;
+  return true;
+}
+
+// اشتراك Realtime — بيوصل فورًا أي إشعار جديد يخص العميل الحالي (لحظة ما
+// الأدمن ينشره)، من غير الحاجة لعمل refresh للصفحة. بيرجع دالة "unsubscribe".
+// محتاج تفعيل Realtime على الجدول أولًا (موجود في نفس ملف الـ SQL بالأعلى).
+export function subscribeToClientNotifications(clientId, onInsert) {
+  if (!clientId) return () => {};
+  const channel = supabase
+    .channel(`notifications-${clientId}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "notifications", filter: `client_id=eq.${clientId}` },
+      (payload) => {
+        if (payload?.new?.is_published) onInsert(mapNotificationRow(payload.new));
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
