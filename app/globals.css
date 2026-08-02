@@ -146,13 +146,15 @@ html.light .glass-panel {
    عادي زي ما هو. */
 @media (min-width: 768px) {
   .glass-panel {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: rgba(10,10,10,0.94);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: #0a0a0a !important;
+    will-change: auto;
+    transform: none;
   }
 
   html.light .glass-panel {
-    background: rgba(255,255,255,0.96);
+    background: #ffffff !important;
   }
 }
 
