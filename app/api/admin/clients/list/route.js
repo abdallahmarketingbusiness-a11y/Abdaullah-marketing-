@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "../../../../../lib/adminApiAuth";
-import { supabaseService } from "../../../../../lib/supabaseServiceClient";
 
 export async function POST(request) {
   try {
-    await requireAdmin(request);
+    const { supabaseService } = await requireAdmin(request);
 
     // 1) كل حسابات auth.users (بريد، تاريخ إنشاء، آخر دخول، حالة الحظر...)
     //    perPage 1000 كافي لأي عدد عملاء متوسط؛ لو العدد كبر أكتر من كده

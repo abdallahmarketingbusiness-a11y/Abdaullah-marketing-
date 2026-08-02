@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "../../../../../lib/adminApiAuth";
-import { supabaseService } from "../../../../../lib/supabaseServiceClient";
 
 export async function POST(request) {
   try {
-    const { user: admin } = await requireAdmin(request);
+    const { user: admin, supabaseService } = await requireAdmin(request);
     const body = await request.json();
     const userId = body.userId;
     const isActive = !!body.isActive;

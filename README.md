@@ -1,4 +1,30 @@
-## تحديث جديد — المنشورات: جدولة + تثبيت + صور متعددة + إشعار تلقائي
+## تحديث جديد — تصحيح مشكلة الـ Build على Vercel
+
+لو ظهرلك وقت الـ Deploy على Vercel خطأ زي:
+```
+Error: supabaseKey is required.
+Error: Failed to collect page data for /api/admin/clients/create
+```
+السبب إن متغير `SUPABASE_SERVICE_ROLE_KEY` مش مضاف في إعدادات Vercel (مش
+كفاية إنه موجود في `.env.local` عندك بس — الملف ده ملفك الشخصي ومبيتنشرش
+مع المشروع). خطوات الحل:
+
+1. روح Supabase Dashboard → Project Settings → API → انسخ قيمة **service_role**.
+2. روح مشروعك في Vercel → **Settings → Environment Variables** → أضف:
+   - `NEXT_PUBLIC_SUPABASE_URL` (لو مش مضاف بالفعل)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (لو مش مضاف بالفعل)
+   - `SUPABASE_SERVICE_ROLE_KEY` ← القيمة اللي نسختها من فوق
+   - اختار الثلاثة يتفعّلوا على Production + Preview + Development.
+3. بعد الإضافة، لازم تعمل **Redeploy** (مش هيتفعّل تلقائي على الـ deployment
+   القديم — من تبويب Deployments → آخر Deployment → ⋯ → Redeploy).
+
+كمان صلّحت الكود نفسه عشان حتى لو حد نسي يضيف المتغير، الـ build مايقعش
+بالكامل — هيبقى بس المسارات المرتبطة بتبويب "إدارة العملاء" هي اللي ترجع
+رسالة خطأ واضحة وقت الاستخدام الفعلي بدل ما توقف نشر الموقع كله.
+
+---
+
+## تحديث سابق — المنشورات: جدولة + تثبيت + صور متعددة + إشعار تلقائي
 
 قسم "🖼️ المنشورات" (تبويب "🗂️ المحتوى") بقى فيه:
 - **الكابشن، المحتوى الكامل، التصنيف، الوسوم** — حقول منفصلة زي ما طلبت.
