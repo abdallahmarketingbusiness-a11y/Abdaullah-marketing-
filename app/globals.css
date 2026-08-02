@@ -139,6 +139,23 @@ html.light .glass-panel {
   background: rgba(255,255,255,0.75);
 }
 
+/* الشريط العلوي (Navbar + AnnouncementBar) على شاشات الكمبيوتر: بدون Blur
+   خالص (كان بيسبب بطء واضح في السكرول على الشاشات العريضة). بدل الشفافية
+   الضبابية، بنستخدم خلفية صلبة قريبة من نفس اللون عشان الشكل يفضل قريب من
+   الأصلي من غير أي تكلفة أداء. على الموبايل (أصغر من 768px) البلور فاضل
+   عادي زي ما هو. */
+@media (min-width: 768px) {
+  .glass-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(10,10,10,0.94);
+  }
+
+  html.light .glass-panel {
+    background: rgba(255,255,255,0.96);
+  }
+}
+
 .btn-primary {
   display: inline-flex;
   align-items: center;
