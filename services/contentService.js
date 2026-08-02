@@ -7,6 +7,7 @@ import {
   CASE_STUDIES_TABLE,
   BLOG_POSTS_TABLE,
   SOCIAL_POSTS_TABLE,
+  SITE_POSTS_TABLE,
   CONTENT_STATUS,
   STORAGE_BUCKET_CONTENT,
 } from "../config/contentConfig";
@@ -16,6 +17,7 @@ const TABLES = {
   caseStudies: CASE_STUDIES_TABLE,
   blogPosts: BLOG_POSTS_TABLE,
   socialPosts: SOCIAL_POSTS_TABLE,
+  sitePosts: SITE_POSTS_TABLE,
 };
 
 function tableOf(entity) {
@@ -29,7 +31,7 @@ export async function fetchPublished(entity, { limit } = {}) {
     .from(tableOf(entity))
     .select("*")
     .eq("status", CONTENT_STATUS.PUBLISHED);
-  if (entity === "socialPosts") query = query.order("is_pinned", { ascending: false });
+  if (entity === "sitePosts") query = query.order("is_pinned", { ascending: false });
   query = query
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
@@ -46,7 +48,7 @@ export async function fetchAllForAdmin(entity, { search = "" } = {}) {
     const searchField = entity === "caseStudies" ? "client_name" : "title";
     query = query.ilike(searchField, `%${term}%`);
   }
-  if (entity === "socialPosts") query = query.order("is_pinned", { ascending: false });
+  if (entity === "sitePosts") query = query.order("is_pinned", { ascending: false });
   query = query.order("sort_order", { ascending: true });
   const { data, error } = await query;
   if (error) throw error;
@@ -111,4 +113,42 @@ export async function uploadContentImage(file) {
   if (error) throw error;
   const { data } = supabaseAdmin.storage.from(STORAGE_BUCKET_CONTENT).getPublicUrl(path);
   return data.publicUrl;
+}
+
+// جلب منشور واحد منشور (public) — يستخدم في صفحة المنشور المستقلة
+export async function fetchPublishedContentById(entity, id) {
+  const { data, error } = await supabase
+    .from(tableOf(entity))
+    .select("*")
+    .eq("id", id)
+    .eq("status", CONTENT_STATUS.PUBLISHED)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// منشورات مشابهة: نفس التصنيف، من غير المنشور الحالي
+export async function fetchRelatedContent(entity, { category, excludeId, limit = 3 } = {}) {
+  let query = supabase
+    .from(tableOf(entity))
+    .select("*")
+    .eq("status", CONTENT_STATUS.PUBLISHED)
+    .neq("id", excludeId)
+    .limit(limit);
+  if (category) query = query.eq("category", category);
+  query = query.order("created_at", { ascending: false });
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+// عداد المشاهدات (best-effort، مش لازم يفشل تصفح الصفحة لو حصل خطأ)
+export async function incrementContentViews(entity, id) {
+  try {
+    if (entity === "sitePosts") {
+      await supabase.rpc("increment_site_post_views", { row_id: id });
+    }
+  } catch {
+    // تجاهل أي خطأ هنا، العداد مش حرج
+  }
 }

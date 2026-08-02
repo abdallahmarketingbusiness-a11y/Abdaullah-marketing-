@@ -20,6 +20,7 @@ import { fetchVisibleTestimonials } from "../services/testimonialsService";
 import AnnouncementBar from "../components/AnnouncementBar";
 import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
 import { fetchPublished } from "../services/contentService";
+import { PostsFeedSection, PostsGridPage, PostDetailPage } from "../components/PostsHub";
 
 // تحميل كسول (code-splitting) لصفحات الأدمن ولوحة العميل وتسجيل الدخول/الاشتراك.
 // الصفحات دي كلها موجودة خلف رابط hash مخصص (#admin, #dashboard, #login...)
@@ -1983,7 +1984,7 @@ function CaseStudiesPage() {
   );
 }
 
-function PostsPage() {
+function SocialContentShowcase() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -2000,10 +2001,12 @@ function PostsPage() {
     { id: "video", label: "فيديوهات" },
   ];
 
+  if (!loading && items.length === 0) return null;
+
   return (
-    <div dir="rtl" className="min-h-screen px-6 py-28 relative">
+    <div dir="rtl" className="px-6 py-16 relative">
       <div className="max-w-5xl mx-auto">
-        <PageHeader label="OUR WORK" title="منشوراتنا" desc="نماذج من المحتوى اللي بننتجه لعملائنا — بوستات وفيديوهات على منصات السوشيال ميديا المختلفة." />
+        <PageHeader label="OUR WORK" title="نماذج منشورات نفّذناها للعملاء" desc="أمثلة من المحتوى اللي بننتجه لعملائنا — بوستات وفيديوهات على منصات السوشيال ميديا المختلفة." />
         <Reveal className="flex items-center justify-center gap-2 mb-10">
           {FILTERS.map((f) => (
             <button
@@ -2109,14 +2112,14 @@ function Navbar({ page, setPage, clientSession }) {
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
-  const DIRECT_PAGES = ["home", "services", "gallery", "portfolio-gallery", "case-studies", "posts", "blog", "about", "contact"];
+  const DIRECT_PAGES = ["home", "posts", "post-details", "services", "gallery", "portfolio-gallery", "case-studies", "blog", "about", "contact"];
   const links = [
     { id: "home", label: "الرئيسية" },
+    { id: "posts", label: "المنشورات" },
     { id: "services", label: "الخدمات" },
     { id: "gallery", label: "الباقات" },
     { id: "portfolio-gallery", label: "معرض الأعمال" },
     { id: "case-studies", label: "دراسات الحالة" },
-    { id: "posts", label: "المنشورات" },
     { id: "blog", label: "المدونة" },
     { id: "about", label: "من نحن" },
     { id: "contact", label: "تواصل معنا" },
@@ -2221,6 +2224,7 @@ function Footer({ setPage }) {
 export default function App() {
   const [page, setPage] = useState("home");
   const [selectedPackageId, setSelectedPackageId] = useState(null);
+  const [selectedPostId, setSelectedPostId] = useState(null);
   const [builderInitialData, setBuilderInitialData] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [clientSession, setClientSession] = useState(null);
@@ -2249,6 +2253,10 @@ export default function App() {
       else if (route === "services") setPage("services");
       else if (route === "case-studies") setPage("case-studies");
       else if (route === "posts") setPage("posts");
+      else if (route === "post-details") {
+        setSelectedPostId(params.get("id"));
+        setPage("post-details");
+      }
       else if (route === "blog") setPage("blog");
       else if (route === "about") setPage("about");
       else if (route === "contact") setPage("contact");
@@ -2259,16 +2267,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery", "login", "signup", "forgot-password", "reset-password", "dashboard", "services", "case-studies", "posts", "blog", "about", "contact"].includes(page)) {
+    if (["gallery", "package-details", "admin", "admin-login", "portfolio-gallery", "login", "signup", "forgot-password", "reset-password", "dashboard", "services", "case-studies", "posts", "post-details", "blog", "about", "contact"].includes(page)) {
       const hash =
         page === "package-details" && selectedPackageId
           ? `#package-details?id=${selectedPackageId}`
+          : page === "post-details" && selectedPostId
+          ? `#post-details?id=${selectedPostId}`
           : `#${page === "admin-login" ? "admin" : page}`;
       if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
     } else if (window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname);
     }
-  }, [page, selectedPackageId]);
+  }, [page, selectedPackageId, selectedPostId]);
 
   // لو داخل على #admin ومعاه Session أدمن شغالة بالفعل، يدخل على طول من غير Login
   useEffect(() => {
@@ -2351,6 +2361,10 @@ export default function App() {
       {page === "home" && (
         <>
           <HeroPage setPage={setPage} />
+          <PostsFeedSection
+            onOpenPost={(id) => { setSelectedPostId(id); setPage("post-details"); }}
+            onViewAll={() => setPage("posts")}
+          />
           <ServicesSection setPage={setPage} />
           <FeaturedProjectSection />
           <PortfolioSection />
@@ -2367,7 +2381,16 @@ export default function App() {
         </div>
       )}
       {page === "case-studies" && <CaseStudiesPage />}
-      {page === "posts" && <PostsPage />}
+      {page === "posts" && (
+        <PostsGridPage onOpenPost={(id) => { setSelectedPostId(id); setPage("post-details"); }} />
+      )}
+      {page === "post-details" && (
+        <PostDetailPage
+          postId={selectedPostId}
+          onBack={() => setPage("posts")}
+          onOpenPost={(id) => setSelectedPostId(id)}
+        />
+      )}
       {page === "blog" && <BlogPage />}
       {page === "about" && <AboutPage setPage={setPage} />}
       {page === "contact" && <ContactPage />}
@@ -2389,7 +2412,12 @@ export default function App() {
         />
       )}
 
-      {page === "portfolio-gallery" && <PortfolioGallery />}
+      {page === "portfolio-gallery" && (
+        <>
+          <PortfolioGallery />
+          <SocialContentShowcase />
+        </>
+      )}
 
       {page === "login" && (
         <ClientLogin

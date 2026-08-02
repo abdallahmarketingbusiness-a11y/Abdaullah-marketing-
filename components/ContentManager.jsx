@@ -3,7 +3,7 @@
 // تبويبات فرعية جوه تبويب واحد بدل 3 أقسام منفصلة في السوبر أدمن.
 import { useEffect, useState } from "react";
 import { GOLD, GOLD2, GOLD3, FONT } from "../config/theme";
-import { CONTENT_STATUS, SOCIAL_POST_TYPE, SOCIAL_PLATFORMS } from "../config/contentConfig";
+import { CONTENT_STATUS, SOCIAL_POST_TYPE, SOCIAL_PLATFORMS, POST_CATEGORIES, postCategoryLabel, postCategoryEmoji } from "../config/contentConfig";
 import {
   fetchAllForAdmin,
   createContent,
@@ -79,23 +79,37 @@ const ENTITY_CONFIG = {
     ],
   },
   socialPosts: {
-    label: "المنشورات",
+    label: "نماذج أعمال سوشيال ميديا",
     titleField: "title",
-    titlePlaceholder: "عنوان المنشور (داخلي، مش بيظهر للعميل)",
-    newLabel: "➕ منشور جديد",
-    emptyLabel: "لا توجد منشورات حتى الآن.",
+    titlePlaceholder: "عنوان النموذج",
+    newLabel: "➕ نموذج جديد",
+    emptyLabel: "لا توجد نماذج حتى الآن.",
     fields: [
       { key: "title", label: "العنوان", type: "text" },
       { key: "platform", label: "المنصة", type: "select", options: SOCIAL_PLATFORMS },
       { key: "post_type", label: "النوع", type: "select", options: [SOCIAL_POST_TYPE.POST, SOCIAL_POST_TYPE.VIDEO] },
-      { key: "category", label: "التصنيف", type: "text" },
-      { key: "tags", label: "الوسوم (افصل بفاصلة)", type: "tags" },
-      { key: "caption", label: "الكابشن", type: "textarea" },
-      { key: "content", label: "المحتوى الكامل (اختياري)", type: "textarea" },
       { key: "stat_label", label: "إحصائية (مثال: 45K مشاهدة)", type: "text" },
-      { key: "media_url", label: "صورة الغلاف", type: "image" },
-      { key: "gallery_urls", label: "صور إضافية", type: "gallery" },
+      { key: "media_url", label: "صورة / صورة غلاف الفيديو", type: "image" },
       { key: "video_url", label: "رابط الفيديو (لو النوع فيديو)", type: "text" },
+    ],
+  },
+  sitePosts: {
+    label: "منشورات الموقع",
+    titleField: "title",
+    titlePlaceholder: "عنوان المنشور",
+    newLabel: "➕ منشور جديد",
+    emptyLabel: "لا توجد منشورات حتى الآن.",
+    fields: [
+      { key: "title", label: "العنوان", type: "text" },
+      { key: "category", label: "التصنيف", type: "select", options: POST_CATEGORIES.map((c) => c.id) },
+      { key: "author", label: "الكاتب", type: "text" },
+      { key: "read_time_minutes", label: "مدة القراءة (دقائق)", type: "number" },
+      { key: "excerpt", label: "وصف مختصر (يظهر في الـ Card)", type: "textarea" },
+      { key: "content", label: "المحتوى الكامل", type: "textarea" },
+      { key: "caption", label: "كابشن إضافي (يظهر تحت الصورة)", type: "textarea" },
+      { key: "tags", label: "الوسوم (افصل بفاصلة — لاقتراح منشورات مشابهة)", type: "tags" },
+      { key: "cover_image_url", label: "صورة الغلاف", type: "image" },
+      { key: "gallery_urls", label: "صور إضافية", type: "gallery" },
       { key: "is_pinned", label: "📌 تثبيت المنشور في الأعلى", type: "checkbox" },
       { key: "scheduled_at", label: "⏰ جدولة النشر (اختياري)", type: "datetime" },
     ],
@@ -174,7 +188,7 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
       else await createContent(entity, payload);
 
       // إشعار تلقائي لكل العملاء عند نشر منشور جديد (لأول مرة)
-      if (entity === "socialPosts" && payload.status === CONTENT_STATUS.PUBLISHED && !wasPublished) {
+      if (entity === "sitePosts" && payload.status === CONTENT_STATUS.PUBLISHED && !wasPublished) {
         broadcastNotificationToAll({
           title: `🆕 منشور جديد: ${payload.title}`,
           notifType: "campaign",
@@ -212,7 +226,10 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
             )}
             {f.type === "select" && (
               <select style={fieldStyle} value={form[f.key]} onChange={(e) => update(f.key, e.target.value)}>
-                {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                {f.options.map((o) => {
+                  const cat = f.key === "category" ? POST_CATEGORIES.find((c) => c.id === o) : null;
+                  return <option key={o} value={o}>{cat ? `${cat.emoji} ${cat.label}` : o}</option>;
+                })}
               </select>
             )}
             {f.type === "tags" && (
@@ -306,7 +323,7 @@ function EntitySection({ entity }) {
     const next = item.status === CONTENT_STATUS.HIDDEN ? CONTENT_STATUS.PUBLISHED : CONTENT_STATUS.HIDDEN;
     const updated = await setContentStatus(entity, item.id, next);
     setItems((list) => list.map((p) => (p.id === item.id ? updated : p)));
-    if (entity === "socialPosts" && next === CONTENT_STATUS.PUBLISHED) {
+    if (entity === "sitePosts" && next === CONTENT_STATUS.PUBLISHED) {
       broadcastNotificationToAll({
         title: `🆕 منشور جديد: ${updated.title}`,
         notifType: "campaign",
@@ -375,6 +392,9 @@ function EntitySection({ entity }) {
                   {entity === "socialPosts" && (
                     <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.platform} · {item.post_type === "video" ? "فيديو" : "بوست"}</p>
                   )}
+                  {entity === "sitePosts" && (
+                    <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{postCategoryEmoji(item.category)} {postCategoryLabel(item.category)} {item.views_count ? `· 👁️ ${item.views_count}` : ""}</p>
+                  )}
                   {entity === "blogPosts" && <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.category}</p>}
                   {entity === "caseStudies" && <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.industry}</p>}
                 </div>
@@ -405,13 +425,14 @@ function EntitySection({ entity }) {
 }
 
 const SUB_TABS = [
+  { id: "sitePosts", label: "📰 منشورات الموقع" },
   { id: "caseStudies", label: "📊 دراسات الحالة" },
-  { id: "socialPosts", label: "🖼️ المنشورات" },
+  { id: "socialPosts", label: "🖼️ نماذج أعمال سوشيال ميديا" },
   { id: "blogPosts", label: "📝 المدونة" },
 ];
 
 export default function ContentManager() {
-  const [sub, setSub] = useState("caseStudies");
+  const [sub, setSub] = useState("sitePosts");
   return (
     <div dir="rtl">
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>

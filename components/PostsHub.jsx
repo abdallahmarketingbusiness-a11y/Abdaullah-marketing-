@@ -439,6 +439,16 @@ export function PostDetailPage({ postId, onBack, onOpenPost }) {
           )}
         </div>
 
+        {Array.isArray(post.gallery_urls) && post.gallery_urls.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-10">
+            {post.gallery_urls.map((url, i) => (
+              <div key={i} className="relative aspect-square rounded-xl overflow-hidden">
+                <Image src={url} alt={`${post.title} ${i + 1}`} fill sizes="(max-width: 640px) 50vw, 33vw" className="object-cover" />
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="divider-gradient mb-6" />
         <ShareButtons title={post.title} />
 
