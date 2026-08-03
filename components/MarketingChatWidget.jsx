@@ -14,6 +14,8 @@ const WELCOME_MESSAGE =
 // يستخدم الشات، لأن كل محادثة بتتحفظ مربوطة بحسابه في لوحة الأدمن.
 export default function MarketingChatWidget({ clientSession, setPage }) {
   const [open, setOpen] = useState(false);
+  // view: "chat" (المحادثة الحالية) أو "list" (قائمة "محادثاتي" للرجوع لمحادثة قديمة)
+  const [view, setView] = useState("chat");
   const [messages, setMessages] = useState([
     { role: "assistant", content: WELCOME_MESSAGE },
   ]);
@@ -22,6 +24,9 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
   const [error, setError] = useState("");
   const [hasUnread, setHasUnread] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [conversationsLoading, setConversationsLoading] = useState(false);
+  const [conversationsError, setConversationsError] = useState("");
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
   const isLoggedIn = !!clientSession?.access_token;
@@ -143,6 +148,67 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
     }
   }
 
+  // يجيب قائمة كل محادثات العميل (من الأحدث للأقدم) — بيتنادى لما يدوس على
+  // زرار "محادثاتي" في الهيدر.
+  async function openConversationsList() {
+    setView("list");
+    setConversationsLoading(true);
+    setConversationsError("");
+    try {
+      const res = await fetch("/api/chat/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${clientSession.access_token}`,
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "تعذّر تحميل المحادثات.");
+      setConversations(data.conversations || []);
+    } catch (err) {
+      setConversationsError(err?.message || "تعذّر تحميل المحادثات.");
+    } finally {
+      setConversationsLoading(false);
+    }
+  }
+
+  // يفتح محادثة قديمة بعينها: يجيب كل رسائلها ويعرضها، ويخلي أي رسالة
+  // جديدة تتبعت تكمل على نفس المحادثة دي (مش تبدأ واحدة جديدة).
+  async function openConversation(conv) {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/chat/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${clientSession.access_token}`,
+        },
+        body: JSON.stringify({ conversationId: conv.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "تعذّر فتح المحادثة.");
+
+      const loaded = (data.messages || []).map((m) => ({ role: m.role, content: m.content }));
+      setMessages(loaded.length ? loaded : [{ role: "assistant", content: WELCOME_MESSAGE }]);
+      setConversationId(conv.id);
+      setView("chat");
+    } catch (err) {
+      setConversationsError(err?.message || "تعذّر فتح المحادثة.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // يبدأ محادثة جديدة تمامًا (فاضية) — من غير ما يمسح محادثاته القديمة،
+  // بس أي رسالة جديدة هتتحفظ في محادثة جديدة بدل ما تكمل على القديمة.
+  function startNewConversation() {
+    setMessages([{ role: "assistant", content: WELCOME_MESSAGE }]);
+    setConversationId(null);
+    setError("");
+    setView("chat");
+  }
+
   return (
     <>
       {/* الزرار العائم */}
@@ -158,7 +224,7 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
           width: 60,
           height: 60,
           borderRadius: "50%",
-          background: `linear-gradient(135deg, ${GOLD3}, ${GOLD})`,
+          background: "radial-gradient(circle at 35% 30%, #201b12, #0c0a07)",
           boxShadow: "0 4px 24px rgba(201,150,58,0.45)",
           display: "flex",
           alignItems: "center",
@@ -166,9 +232,10 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
           border: "none",
           cursor: "pointer",
           fontSize: 26,
+          overflow: "hidden",
         }}
       >
-        {open ? "✕" : "🤖"}
+        {open ? "✕" : <img src="/images/icons/icon-ai.png" alt="مساعد ذكي" style={{ width: "78%", height: "78%", objectFit: "contain" }} />}
         {hasUnread && !open && (
           <span
             style={{
@@ -227,9 +294,10 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
                 justifyContent: "center",
                 fontSize: 18,
                 flexShrink: 0,
+                overflow: "hidden",
               }}
             >
-              🤖
+              <img src="/images/icons/icon-ai.png" alt="" style={{ width: "76%", height: "76%", objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#060606", fontWeight: 800, fontSize: 14 }}>
@@ -239,6 +307,46 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
                 مساعد ذكاء اصطناعي — تسويق رقمي وسوشيال ميديا
               </div>
             </div>
+            {isLoggedIn && view === "chat" && (
+              <button
+                onClick={startNewConversation}
+                title="محادثة جديدة"
+                aria-label="ابدأ محادثة جديدة"
+                style={{
+                  background: "rgba(0,0,0,0.15)",
+                  border: "none",
+                  color: "#060606",
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  flexShrink: 0,
+                }}
+              >
+                ➕
+              </button>
+            )}
+            {isLoggedIn && (
+              <button
+                onClick={() => (view === "list" ? setView("chat") : openConversationsList())}
+                title={view === "list" ? "رجوع للمحادثة" : "محادثاتي"}
+                aria-label={view === "list" ? "رجوع للمحادثة" : "عرض محادثاتي السابقة"}
+                style={{
+                  background: "rgba(0,0,0,0.15)",
+                  border: "none",
+                  color: "#060606",
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  flexShrink: 0,
+                }}
+              >
+                {view === "list" ? "💬" : "☰"}
+              </button>
+            )}
             <button
               onClick={() => setOpen(false)}
               aria-label="إغلاق الشات"
@@ -257,6 +365,16 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
             </button>
           </div>
 
+          {view === "list" ? (
+            <ConversationsList
+              conversations={conversations}
+              loading={conversationsLoading}
+              error={conversationsError}
+              onSelect={openConversation}
+              onNew={startNewConversation}
+            />
+          ) : (
+          <>
           {/* الرسائل */}
           <div
             ref={scrollRef}
@@ -439,9 +557,100 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
             </button>
           </div>
           )}
+          </>
+          )}
         </div>
       )}
     </>
+  );
+}
+
+function fmtConvDate(d) {
+  if (!d) return "";
+  try {
+    return new Date(d).toLocaleDateString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+}
+
+// قائمة "محادثاتي" — بتظهر لما العميل يدوس زرار ☰ في الهيدر، وتسمحله
+// يرجع لأي محادثة قديمة أو يبدأ واحدة جديدة.
+function ConversationsList({ conversations, loading, error, onSelect, onNew }) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "14px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        background: "radial-gradient(circle at 50% 0%, #111 0%, #060606 70%)",
+      }}
+    >
+      <button
+        onClick={onNew}
+        style={{
+          padding: "10px 0",
+          borderRadius: 10,
+          border: `1px solid ${GOLD}66`,
+          background: "transparent",
+          color: GOLD2,
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        ➕ محادثة جديدة
+      </button>
+
+      {loading ? (
+        <p style={{ color: "#888", fontSize: 12.5, textAlign: "center", marginTop: 8 }}>جاري التحميل...</p>
+      ) : error ? (
+        <p style={{ color: "#ff8a8a", fontSize: 12.5, textAlign: "center", marginTop: 8 }}>{error}</p>
+      ) : conversations.length === 0 ? (
+        <p style={{ color: "#888", fontSize: 12.5, textAlign: "center", marginTop: 8 }}>
+          مفيش محادثات سابقة لسه — ابدأ واحدة جديدة!
+        </p>
+      ) : (
+        conversations.map((conv) => (
+          <button
+            key={conv.id}
+            onClick={() => onSelect(conv)}
+            style={{
+              textAlign: "right",
+              padding: "12px 14px",
+              borderRadius: 12,
+              border: "1px solid #2a2a2a",
+              background: "#141414",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <span style={{ color: "#777", fontSize: 10.5 }}>{conv.messages_count || 0} رسالة</span>
+              <span style={{ color: "#777", fontSize: 10.5 }}>{fmtConvDate(conv.last_message_at)}</span>
+            </div>
+            <div
+              style={{
+                color: "#f0f0f0",
+                fontSize: 12.5,
+                lineHeight: 1.6,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {conv.summary?.trim() || conv.last_message_preview || "محادثة بدون ملخص لسه"}
+            </div>
+          </button>
+        ))
+      )}
+    </div>
   );
 }
 

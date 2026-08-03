@@ -15,7 +15,18 @@
 // ⚠️ الشات ده لازم العميل يكون مسجّل دخول (شوف MarketingChatWidget.jsx):
 // كل رسالة بتتحفظ في جدول ai_chat_messages مربوطة بمحادثة
 // (ai_chat_conversations) مربوطة بحساب العميل، عشان تظهر لاحقًا في لوحة
-// الأدمن تحت "محادثات الذكاء الاصطناعي".
+// الأدمن تحت "محادثات الذكاء الاصطناعي"، والعميل يقدر يرجع لأي محادثة قديمة
+// من عنده (شوف ConversationsList في MarketingChatWidget.jsx).
+//
+// 🧠 ذاكرة دائمة عبر المحادثات (ai_client_memory): بعد كل محادثة، بنولّد
+// "حقائق" جديدة اتعرفت عن العميل (نوع نشاطه، أهدافه، تفضيلاته...) ونضيفها
+// لملف ذاكرة دائم خاص بيه. في أي محادثة جديدة (حتى لو مختلفة تمامًا)، بنجيب
+// الذاكرة دي ونحقنها في الـ prompt، فالمساعد "يفتكر" العميل من غير ما يسأله
+// من الأول تاني.
+//
+// 📊 تحليل الحساب: قبل ما نرد، بنجيب فعليًا من Supabase بيانات العميل
+// الحقيقية (اسمه/نشاطه، آخر تقرير تحليلات منشور له، حالة اشتراكه الحالية)
+// ونحطها في الـ prompt كحقائق — مش بنخلي الموديل "يخمّن" أرقام.
 
 import { getSupabaseService } from "../../../lib/supabaseServiceClient";
 
@@ -101,7 +112,18 @@ const SYSTEM_PROMPT = `أنتَ "خبير عبدالله ماركتنج" — م�
 خطة كاملة، عشان الخطة تبقى واقعية ومفيدة فعلاً مش عمومية.
 
 ═══════════════════════════════════
-أسلوب الردود — الطول والعمق
+ملف العميل وذاكرتك عنه (لو موجودة تحت في هذه الرسالة)
+═══════════════════════════════════
+ممكن تلاقي تحت قسم "بيانات العميل الحالية" وقسم "حقائق سابقة عن العميل" — دول بيانات حقيقية
+جاية من حساب العميل الفعلي على الموقع (اسمه، نشاطه، آخر تقرير أداء منشور له، حالة اشتراكه) وحقائق
+اتجمعت من محادثاتك السابقة معاه. استخدمها بشكل طبيعي في ردك:
+- لو فيه بيانات أداء حقيقية (وصول، تفاعل، متابعين، أفضل/أضعف بوست)، حلّلها فعليًا وقول رأيك
+  فيها بالأرقام الحقيقية دي، مش أرقام تخمينية. لو مفيش بيانات أداء لسه، قول ده بصراحة ومتخترعش أرقام.
+- لو عارف اسمه أو اسم نشاطه من البيانات، خاطبه بيه بدل ما تسأله تاني.
+- لو "حقائق سابقة عن العميل" فيها معلومة مهمة (نوع مشروعه، هدفه، مشكلة ذكرها قبل كده)، ابني
+  عليها من غير ما تخليه يكررها من الأول — كأنك فعلاً فاكر آخر مرة اتكلمتوا.
+- لو مفيش بيانات كفاية عن حاجة معينة، اسأل بدل ما تفترض.
+
 ═══════════════════════════════════
 - **مفيش حد أقصى مصطنع لطول الرد.** لو السؤال بسيط (تعريف، رأي سريع، توضيح)، جاوب في جملتين
   أو ثلاثة — مفيش داعي تطوّل في حاجة بسيطة. لكن لو الموضوع محتاج تفصيل حقيقي (خطة مشروع، خطة
@@ -152,6 +174,30 @@ const SUMMARY_SYSTEM_PROMPT = `مهمتك الوحيدة: تلخيص محادث�
 ما تكتبش أي مقدمة زي "الملخص:" أو "في المحادثة دي"، ابدأ بالمحتوى على طول. من غير نقط أو
 عناوين — فقرة نصية عادية بس.`;
 
+// System prompt لتحديث "ذاكرة العميل الدائمة" — بياخد الذاكرة القديمة (لو
+// موجودة) + المحادثة الحالية، ويرجّع نسخة محدّثة ومُدمجة من الحقائق (مش
+// بيضيف نص فوق نص، بيعيد صياغة الكل في نسخة واحدة نضيفة ومختصرة).
+const MEMORY_UPDATE_SYSTEM_PROMPT = `مهمتك: الحفاظ على ملف "ذاكرة" مختصر ومفيد عن عميل معيّن
+لمساعد ذكاء اصطناعي تسويقي اسمه "خبير عبدالله ماركتنج"، عشان يفتكره في أي محادثة جديدة.
+
+هتاخد: (1) الذاكرة الحالية عن العميل لو موجودة، (2) آخر محادثة حصلت معاه. مهمتك تدمجهم في نسخة
+واحدة محدّثة من الذاكرة — مش تضيف نص فوق نص، لكن تعيد صياغة كل الحقائق المهمة (القديمة + الجديدة)
+في ملف واحد مختصر ومنظم.
+
+اكتب الذاكرة كنقط قصيرة (bullet points بعلامة "-")، كل نقطة حقيقة واحدة واضحة، تغطي لو متوفر:
+- نوع نشاطه/مشروعه التجاري ومجاله.
+- أهدافه التسويقية أو التجارية اللي ذكرها.
+- تفضيلاته أو قراراته (مثلاً: قرر يركز على إنستجرام، رافض يعمل تيك توك، عايز يستهدف فئة معينة).
+- أي مشكلة أو تحدي بيواجهه ذكره أكتر من مرة.
+- أي معلومة شخصية مهنية ذات صلة (اسم نشاطه، لو ذكر مكانه).
+
+قواعد صارمة:
+- ما تكتبش تفاصيل عابرة أو أسئلة تقنية بسيطة ملهاش قيمة تُفتكر (زي "سأل عن تعريف الـ SEO").
+- ما تكررش نفس الحقيقة مرتين بصياغتين مختلفتين — ادمجها في نقطة واحدة.
+- لو حقيقة قديمة اتناقضت مع حاجة جديدة (مثلاً غيّر نوع نشاطه)، احذف القديمة واكتب الجديدة بس.
+- أقصى حد حوالي 15 نقطة — لو زاد عن كده، احذف الأقل أهمية أو الأقدم واحتفظ بالأهم والأحدث.
+- من غير أي مقدمة أو خاتمة، ابدأ بالنقط على طول. لو مفيش أي حقيقة تستاهل تتسجل، رجّع سطر فاضي.`;
+
 function buildGeminiContents(rows) {
   return rows
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -164,7 +210,78 @@ function buildGeminiContents(rows) {
     }));
 }
 
-// نداء بسيط (غير Streaming) لـ Gemini — بيستخدم لتوليد الملخص بعد كل تبادل
+// تاريخ عربي مبسّط للاستخدام جوه الـ prompt (من غير مكتبة خارجية)
+function formatDateAr(d) {
+  if (!d) return null;
+  try {
+    return new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "2-digit" });
+  } catch {
+    return null;
+  }
+}
+
+// بيجمع "ملف العميل الحقيقي" من الجداول الموجودة فعلاً في قاعدة البيانات:
+// بيانات clients، آخر تقرير أداء منشور (client_analytics)، وحالة اشتراكه
+// الحالية (package_subscriptions) — عشان الموديل "يحلل حسابه" من بيانات
+// حقيقية مش من تخمين.
+async function buildClientProfileText(supabaseService, clientId) {
+  const lines = [];
+
+  const [{ data: clientRow }, { data: analyticsRows }, { data: subRows }] = await Promise.all([
+    supabaseService.from("clients").select("full_name, business_name, phone").eq("user_id", clientId).maybeSingle(),
+    supabaseService
+      .from("client_analytics")
+      .select("*")
+      .eq("client_id", clientId)
+      .eq("status", "published")
+      .order("period_month", { ascending: false })
+      .limit(1),
+    supabaseService
+      .from("package_subscriptions")
+      .select("package_name, status, start_date, end_date")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ]);
+
+  if (clientRow?.full_name) lines.push(`- اسم العميل: ${clientRow.full_name}`);
+  if (clientRow?.business_name) lines.push(`- اسم النشاط التجاري: ${clientRow.business_name}`);
+
+  const sub = subRows?.[0];
+  if (sub) {
+    const statusAr = { pending: "قيد المراجعة", active: "نشط", expired: "منتهي", cancelled: "ملغي" }[sub.status] || sub.status;
+    let subLine = `- حالة الاشتراك: ${sub.package_name || "باقة غير محددة"} — ${statusAr}`;
+    if (sub.status === "active" && sub.end_date) {
+      const daysLeft = Math.ceil((new Date(sub.end_date) - new Date()) / 86400000);
+      subLine += ` (${daysLeft > 0 ? `متبقي ${daysLeft} يوم` : "منتهي بالفعل"})`;
+    }
+    lines.push(subLine);
+  } else {
+    lines.push("- مفيش اشتراك مسجّل لهذا العميل حتى الآن.");
+  }
+
+  const report = analyticsRows?.[0];
+  if (report) {
+    lines.push(`- آخر تقرير أداء منشور (${report.period_label || formatDateAr(report.period_month) || ""}):`);
+    lines.push(`  · الوصول: ${report.reach ?? 0} | مرات الظهور: ${report.impressions ?? 0} | نسبة التفاعل: ${report.engagement_rate ?? 0}%`);
+    lines.push(`  · زيارات الحساب: ${report.profile_visits ?? 0} | عدد المتابعين: ${report.followers_count ?? 0} (نمو: ${report.followers_growth ?? 0})`);
+    if (Array.isArray(report.best_posts) && report.best_posts.length) {
+      lines.push(`  · أفضل منشور: ${report.best_posts[0]?.title || ""} (${report.best_posts[0]?.metric || ""})`);
+    }
+    if (Array.isArray(report.strengths) && report.strengths.length) {
+      lines.push(`  · نقاط قوة رصدها الفريق: ${report.strengths.slice(0, 3).join("، ")}`);
+    }
+    if (Array.isArray(report.weaknesses) && report.weaknesses.length) {
+      lines.push(`  · نقاط تحتاج تحسين: ${report.weaknesses.slice(0, 3).join("، ")}`);
+    }
+  } else {
+    lines.push("- مفيش تقرير أداء منشور لهذا العميل لسه.");
+  }
+
+  return lines.join("\n");
+}
+
+// نداء بسيط (غير Streaming) لـ Gemini — بيستخدم لتوليد الملخص/الذاكرة بعد كل تبادل
 async function callGeminiOnce({ apiKey, systemText, contents, maxTokens }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
   const res = await fetch(url, {
@@ -268,6 +385,27 @@ export async function POST(req) {
 
     const contents = buildGeminiContents(historyRows || []);
 
+    // 4.5) هات ملف العميل الحقيقي (بيانات + آخر تحليلات + اشتراك) وذاكرته
+    // الدائمة المتراكمة من محادثات سابقة، وحقنهم في الـ system prompt —
+    // ده اللي بيخلي المساعد "يفتكر" العميل ويحلل حسابه بأرقام حقيقية.
+    const [clientProfileText, { data: memoryRow }] = await Promise.all([
+      buildClientProfileText(supabaseService, clientId).catch((e) => {
+        console.error("buildClientProfileText error:", e);
+        return "- تعذّر تحميل بيانات الحساب حاليًا.";
+      }),
+      supabaseService.from("ai_client_memory").select("memory_text").eq("client_id", clientId).maybeSingle(),
+    ]);
+
+    const memoryText = memoryRow?.memory_text?.trim();
+
+    const fullSystemPrompt =
+      SYSTEM_PROMPT +
+      `\n\n═══════════════════════════════════\nبيانات العميل الحالية (من حسابه الفعلي على الموقع)\n═══════════════════════════════════\n` +
+      clientProfileText +
+      (memoryText
+        ? `\n\n═══════════════════════════════════\nحقائق سابقة عن العميل (من محادثات سابقة)\n═══════════════════════════════════\n${memoryText}`
+        : "");
+
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`;
     const upstream = await fetch(url, {
       method: "POST",
@@ -277,7 +415,7 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         contents,
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        systemInstruction: { parts: [{ text: fullSystemPrompt }] },
         // بيسمح للموديل يستخدم بحث جوجل الفعلي قبل ما يرد — ده اللي بيخليه
         // "يبحث" عن أحدث أساليب/استراتيجيات كبار المسوقين بدل ما يعتمد على
         // معرفته المحفوظة بس.
@@ -380,6 +518,44 @@ export async function POST(req) {
                   messages_count: (allRows || []).length,
                 })
                 .eq("id", conversationId);
+
+              // 6) حدّث ذاكرة العميل الدائمة — بندمج الذاكرة القديمة (لو
+              // موجودة) مع آخر تبادل حصل، ونولّد نسخة محدّثة من الحقائق.
+              // ده اللي بيخلي المساعد "يفتكر" العميل حتى في محادثة جديدة
+              // تمامًا، مش بس جوه نفس المحادثة.
+              try {
+                const { data: existingMemory } = await supabaseService
+                  .from("ai_client_memory")
+                  .select("memory_text")
+                  .eq("client_id", clientId)
+                  .maybeSingle();
+
+                const memoryPromptParts = [];
+                if (existingMemory?.memory_text?.trim()) {
+                  memoryPromptParts.push(
+                    `الذاكرة الحالية عن العميل:\n${existingMemory.memory_text.trim()}`
+                  );
+                }
+                memoryPromptParts.push(
+                  `آخر رسالة من العميل: ${userText}\n\nرد المساعد عليها: ${fullReply || "(بدون رد مسجّل)"}`
+                );
+
+                const updatedMemory = await callGeminiOnce({
+                  apiKey,
+                  systemText: MEMORY_UPDATE_SYSTEM_PROMPT,
+                  contents: [{ role: "user", parts: [{ text: memoryPromptParts.join("\n\n---\n\n") }] }],
+                  maxTokens: 500,
+                });
+
+                const cleanMemory = updatedMemory?.trim();
+                if (cleanMemory) {
+                  await supabaseService
+                    .from("ai_client_memory")
+                    .upsert({ client_id: clientId, memory_text: cleanMemory }, { onConflict: "client_id" });
+                }
+              } catch (memErr) {
+                console.error("Memory update error:", memErr);
+              }
             } catch (bgErr) {
               console.error("Post-chat save/summary error:", bgErr);
             }
