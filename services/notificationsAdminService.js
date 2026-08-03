@@ -14,12 +14,14 @@ import { logActivity } from "./activityLogService";
 
 const TABLE = "notifications";
 
-function cleanPayload({ title, notifType, notifDate, scheduledAt }) {
+function cleanPayload({ title, notifType, notifDate, scheduledAt, linkType, linkId }) {
   return {
     title: (title || "").trim(),
     notif_type: notifType || "default",
     notif_date: notifDate || new Date().toISOString().slice(0, 10),
     scheduled_at: scheduledAt || null,
+    link_type: linkType || null,
+    link_id: linkId || null,
     is_published: true,
   };
 }

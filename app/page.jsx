@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { createPackage } from "../services/packagesService";
@@ -20,6 +20,13 @@ import { fetchVisibleTestimonials } from "../services/testimonialsService";
 import AnnouncementBar from "../components/AnnouncementBar";
 import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
 import { fetchPublished } from "../services/contentService";
+import {
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  subscribeToClientNotifications,
+} from "../services/clientPortalService";
+import { NOTIF_ICONS } from "../lib/notificationIcons";
 import { PostsFeedSection, PostsGridPage, PostDetailPage } from "../components/PostsHub";
 
 // تحميل كسول (code-splitting) لصفحات الأدمن ولوحة العميل وتسجيل الدخول/الاشتراك.
@@ -2104,7 +2111,95 @@ function BlogPage() {
   );
 }
 
-function Navbar({ page, setPage, clientSession }) {
+function NotificationBell({ notifications, unreadCount, onItemClick, onMarkAllRead, onViewAll, compact }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  const list = (notifications || []).slice(0, 6);
+  const hasUnread = list.some((n) => !n.read);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="الإشعارات"
+        className={`relative flex items-center justify-center rounded-xl transition-colors ${compact ? "w-9 h-9 text-base" : "w-10 h-10 text-lg"}`}
+        style={{ color: GOLD, background: "rgba(201,150,58,0.08)", border: "1px solid rgba(201,150,58,0.18)" }}
+      >
+        🔔
+        {unreadCount > 0 && (
+          <span
+            className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[10px] font-black text-white"
+            style={{ background: "linear-gradient(135deg,#ff6a6a,#d43b3b)", border: "2px solid var(--bg-elevated)" }}
+          >
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          dir="rtl"
+          className="absolute left-0 mt-2 w-80 max-w-[90vw] rounded-2xl overflow-hidden glass-panel"
+          style={{ border: "1px solid var(--border-soft)", boxShadow: "0 18px 50px rgba(0,0,0,0.35)", zIndex: 60 }}
+        >
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-soft)" }}>
+            <span className="text-sm font-black" style={{ color: "var(--text-primary)" }}>🔔 الإشعارات</span>
+            {hasUnread && (
+              <button onClick={onMarkAllRead} className="text-[11px] font-bold" style={{ color: GOLD }}>
+                تعليم الكل كمقروء
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-80 overflow-y-auto">
+            {list.length === 0 ? (
+              <div className="text-center py-6 text-xs" style={{ color: "var(--text-muted)" }}>
+                لا توجد إشعارات حتى الآن.
+              </div>
+            ) : (
+              list.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => { setOpen(false); onItemClick(n); }}
+                  className="flex w-full items-start gap-2.5 px-4 py-3 text-right transition-colors"
+                  style={{ borderBottom: "1px solid var(--border-soft)", background: n.read ? "transparent" : "rgba(201,150,58,0.07)" }}
+                >
+                  <span className="text-base mt-0.5">{NOTIF_ICONS[n.type] || NOTIF_ICONS.default}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-xs leading-relaxed" style={{ color: "var(--text-primary)", fontWeight: n.read ? 600 : 800 }}>
+                      {n.title}
+                    </span>
+                    <span className="block text-[10.5px] mt-1" style={{ color: "var(--text-muted)" }}>{n.date}</span>
+                  </span>
+                  {!n.read && <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: GOLD }} />}
+                </button>
+              ))
+            )}
+          </div>
+
+          <button
+            onClick={() => { setOpen(false); onViewAll(); }}
+            className="w-full py-2.5 text-xs font-black"
+            style={{ color: GOLD, borderTop: "1px solid var(--border-soft)" }}
+          >
+            عرض كل الإشعارات
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Navbar({ page, setPage, clientSession, notifications, unreadCount, onNotificationClick, onMarkAllRead }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
@@ -2154,6 +2249,15 @@ function Navbar({ page, setPage, clientSession }) {
           ))}
         </ul>
         <div className="hidden md:flex items-center gap-3">
+          {clientSession && (
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onItemClick={onNotificationClick}
+              onMarkAllRead={onMarkAllRead}
+              onViewAll={() => { setMenuOpen(false); setPage("dashboard"); }}
+            />
+          )}
           <button
             onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
             className="text-xs font-semibold tracking-wider px-4 py-2 rounded-full transition-colors"
@@ -2164,6 +2268,16 @@ function Navbar({ page, setPage, clientSession }) {
           <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn-primary !py-2 !px-5 text-xs">واتساب</a>
         </div>
         <div className="flex md:hidden items-center gap-2">
+          {clientSession && (
+            <NotificationBell
+              compact
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onItemClick={onNotificationClick}
+              onMarkAllRead={onMarkAllRead}
+              onViewAll={() => { setMenuOpen(false); setPage("dashboard"); }}
+            />
+          )}
           <button
             onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
             aria-label={clientSession ? "حسابي" : "تسجيل الدخول"}
@@ -2229,6 +2343,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [clientSession, setClientSession] = useState(null);
   const [clientAuthChecked, setClientAuthChecked] = useState(false);
+  const [notifications, setNotifications] = useState(null);
 
   // نظام الباقات المخصصة يستخدم روابط hash (#gallery, #admin, #package-details?id=..)
   // عشان صفحة /admin تكون قابلة للوصول برابط مباشر وغير موجودة في القائمة العادية،
@@ -2306,6 +2421,45 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  // إشعارات العميل — بتحمّل أول ما يسجّل دخول، وتتحدّث فورًا (Realtime) لحظة
+  // ما الأدمن ينشر منشور/إشعار جديد. الجرس في الـ Navbar وتبويب "الإشعارات"
+  // في لوحة العميل بيقروا من نفس الـ state ده عشان يفضلوا متزامنين مع بعض.
+  const clientUserId = clientSession?.user?.id || null;
+  useEffect(() => {
+    if (!clientUserId) {
+      setNotifications(null);
+      return;
+    }
+    let active = true;
+    getNotifications()
+      .then((rows) => { if (active) setNotifications(rows); })
+      .catch(() => { if (active) setNotifications([]); });
+    const unsubscribe = subscribeToClientNotifications(clientUserId, (n) => {
+      setNotifications((list) => [n, ...(list || [])]);
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [clientUserId]);
+
+  const unreadNotifCount = useMemo(() => (notifications || []).filter((n) => !n.read).length, [notifications]);
+
+  function handleNotificationClick(n) {
+    if (!n.read) {
+      setNotifications((list) => (list || []).map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+      markNotificationRead(n.id).catch(() => {});
+    }
+    if (n.linkType === "sitePost" && n.linkId) {
+      window.location.hash = `#post-details?id=${n.linkId}`;
+    }
+  }
+
+  function handleMarkAllNotificationsRead() {
+    setNotifications((list) => (list || []).map((n) => ({ ...n, read: true })));
+    markAllNotificationsRead().catch(() => {});
+  }
+
   useEffect(() => {
     const setMeta = (attr, key, content) => {
       let tag = document.querySelector(`meta[${attr}="${key}"]`);
@@ -2357,7 +2511,15 @@ export default function App() {
       `}</style>
       <WAButton />
       {!["admin", "login", "signup", "forgot-password", "reset-password"].includes(page) && <AnnouncementBar />}
-      <Navbar page={page} setPage={setPage} clientSession={clientSession} />
+      <Navbar
+        page={page}
+        setPage={setPage}
+        clientSession={clientSession}
+        notifications={notifications}
+        unreadCount={unreadNotifCount}
+        onNotificationClick={handleNotificationClick}
+        onMarkAllRead={handleMarkAllNotificationsRead}
+      />
       {page === "home" && (
         <>
           <HeroPage setPage={setPage} />
@@ -2442,6 +2604,9 @@ export default function App() {
       {page === "dashboard" && clientSession && (
         <ClientDashboard
           onLogout={async () => { await signOutClient(); setClientSession(null); setPage("home"); }}
+          notifications={notifications}
+          onNotificationClick={handleNotificationClick}
+          onMarkAllRead={handleMarkAllNotificationsRead}
         />
       )}
 

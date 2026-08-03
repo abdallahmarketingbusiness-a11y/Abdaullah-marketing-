@@ -14,7 +14,7 @@
 // للتحليلات تحديدًا). التفاصيل في src/services/clientPortalService.js
 // و sql/migration_client_portal.sql.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GOLD, GOLD2, GOLD3, BG, FONT } from "../config/theme";
 import {
   getClientProfile,
@@ -32,12 +32,9 @@ import {
   getScripts,
   getNotes,
   getInvoices,
-  getNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
-  subscribeToClientNotifications,
   downloadClientFile,
 } from "../services/clientPortalService";
+import { NOTIF_ICONS } from "../lib/notificationIcons";
 import Toast from "./Toast";
 import FilePreviewModal from "./FilePreviewModal";
 import { AnalyticsTrendChart, PostsCompareList, InsightList } from "./AnalyticsCharts";
@@ -145,169 +142,15 @@ function QuickLink({ icon, label, onClick }) {
 }
 
 // ============================================================================
-// أيقونات الهيدر (الإشعارات + حسابي) — بشكل مقارب لأيقونات تطبيقات الآيفون
-// ============================================================================
-const NOTIF_ICONS_MAP = { invoice: "💳", report: "📄", script: "📝", campaign: "📢", default: "🔔" };
-
-function HeaderIconButton({ icon, badge, onClick, active, label }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      style={{
-        position: "relative",
-        width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-        border: `1px solid ${active ? "transparent" : "rgba(201,150,58,0.28)"}`,
-        background: active
-          ? `linear-gradient(135deg,${GOLD},${GOLD2})`
-          : "linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015))",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 19, cursor: "pointer", padding: 0,
-        boxShadow: active ? "0 8px 20px rgba(201,150,58,0.35)" : "0 4px 14px rgba(0,0,0,0.35)",
-        transition: "background .15s ease, box-shadow .15s ease",
-      }}
-    >
-      <span>{icon}</span>
-      {badge ? (
-        <span
-          style={{
-            position: "absolute", top: -5, insetInlineEnd: -5,
-            minWidth: 18, height: 18, borderRadius: 9, padding: "0 4px",
-            background: "linear-gradient(135deg,#ff6a6a,#d43b3b)",
-            color: "#fff", fontSize: 10.5, fontWeight: 900,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "2px solid #0a0a0a", lineHeight: 1,
-          }}
-        >
-          {badge > 9 ? "9+" : badge}
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-const headerPanelStyle = {
-  position: "absolute", top: "calc(100% + 10px)", insetInlineEnd: 0,
-  width: 310, maxWidth: "90vw",
-  background: "linear-gradient(160deg,#141008,#0a0704)",
-  border: "1px solid rgba(201,150,58,0.3)",
-  borderRadius: 16, boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
-  overflow: "hidden", zIndex: 80,
-};
-
-const headerMenuBtnStyle = {
-  display: "flex", alignItems: "center", gap: 10, width: "100%",
-  padding: "12px 14px", border: "none", background: "transparent",
-  color: "#ddd", fontWeight: 700, fontSize: 12.5, cursor: "pointer",
-  fontFamily: FONT, textAlign: "right",
-};
-
-function NotificationBellPanel({ notifications, onMarkRead, onMarkAllRead, onViewAll }) {
-  const list = (notifications || []).slice(0, 6);
-  const hasUnread = list.some((n) => !n.read);
-  return (
-    <div style={headerPanelStyle}>
-      <div
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "12px 14px", borderBottom: "1px solid rgba(201,150,58,0.18)",
-        }}
-      >
-        <span style={{ fontWeight: 900, color: "#fff", fontSize: 13.5 }}>🔔 الإشعارات</span>
-        {hasUnread && (
-          <button
-            onClick={onMarkAllRead}
-            style={{ background: "none", border: "none", color: GOLD2, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-          >
-            تعليم الكل كمقروء
-          </button>
-        )}
-      </div>
-
-      <div style={{ maxHeight: 320, overflowY: "auto" }}>
-        {list.length === 0 ? (
-          <div style={{ padding: "22px 14px", textAlign: "center", color: "#888", fontSize: 12.5 }}>
-            لا توجد إشعارات حتى الآن.
-          </div>
-        ) : (
-          list.map((n) => (
-            <button
-              key={n.id}
-              onClick={() => !n.read && onMarkRead(n.id)}
-              style={{
-                display: "flex", width: "100%", textAlign: "right", alignItems: "flex-start", gap: 10,
-                padding: "11px 14px", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)",
-                background: n.read ? "transparent" : "rgba(201,150,58,0.08)",
-                cursor: n.read ? "default" : "pointer", fontFamily: FONT,
-              }}
-            >
-              <span style={{ fontSize: 16, marginTop: 1 }}>{NOTIF_ICONS_MAP[n.type] || NOTIF_ICONS_MAP.default}</span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", color: "#fff", fontSize: 12.5, fontWeight: n.read ? 600 : 800, lineHeight: 1.5 }}>
-                  {n.title}
-                </span>
-                <span style={{ display: "block", color: "#888", fontSize: 10.5, marginTop: 3 }}>{n.date}</span>
-              </span>
-              {!n.read && <span style={{ width: 7, height: 7, borderRadius: "50%", background: GOLD, marginTop: 5, flexShrink: 0 }} />}
-            </button>
-          ))
-        )}
-      </div>
-
-      <button
-        onClick={onViewAll}
-        style={{
-          width: "100%", padding: "11px 0", border: "none", borderTop: "1px solid rgba(201,150,58,0.18)",
-          background: "transparent", color: GOLD, fontWeight: 800, fontSize: 12, cursor: "pointer", fontFamily: FONT,
-        }}
-      >
-        عرض كل الإشعارات
-      </button>
-    </div>
-  );
-}
-
-function AccountMenuPanel({ profile, email, onGoProfile, onLogout }) {
-  return (
-    <div style={headerPanelStyle}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 14, borderBottom: "1px solid rgba(201,150,58,0.18)" }}>
-        <div
-          style={{
-            width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-            background: `linear-gradient(135deg,${GOLD},${GOLD3})`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 900, color: "#000", fontSize: 14,
-          }}
-        >
-          {getInitials(profile?.full_name)}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {profile?.full_name || "عميل عزيز"}
-          </div>
-          <div style={{ color: "#888", fontSize: 10.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{email}</div>
-        </div>
-      </div>
-      <button onClick={onGoProfile} style={headerMenuBtnStyle}>👤 الملف الشخصي</button>
-      <button onClick={onLogout} style={{ ...headerMenuBtnStyle, color: "#ff8f8f" }}>🚪 تسجيل الخروج</button>
-    </div>
-  );
-}
-
-// ============================================================================
 // المكوّن الرئيسي
 // ============================================================================
-export default function ClientDashboard({ onLogout }) {
+export default function ClientDashboard({ onLogout, notifications, onNotificationClick, onMarkAllRead }) {
   const [profile, setProfile] = useState(null);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("home");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState(null);
-  const [clientId, setClientId] = useState(null);
-  const [notifications, setNotifications] = useState(null);
-  const [openPanel, setOpenPanel] = useState(null); // "bell" | "account" | null
-  const headerIconsRef = useRef(null);
 
   function notify(type, text) {
     setToast({ type, text });
@@ -318,69 +161,15 @@ export default function ClientDashboard({ onLogout }) {
     const [p, session] = await Promise.all([getClientProfile(), getCurrentClientSession()]);
     setProfile(p);
     setEmail(session?.user?.email || "");
-    setClientId(session?.user?.id || null);
     setLoading(false);
-  }
-
-  async function loadNotifications() {
-    try {
-      const rows = await getNotifications();
-      setNotifications(rows);
-    } catch {
-      setNotifications([]);
-    }
   }
 
   useEffect(() => {
     loadProfile();
-    loadNotifications();
   }, []);
-
-  // تحديث فوري: أي إشعار جديد يخص العميل الحالي يظهر فورًا من غير عمل refresh
-  useEffect(() => {
-    if (!clientId) return;
-    const unsubscribe = subscribeToClientNotifications(clientId, (n) => {
-      setNotifications((list) => [n, ...(list || [])]);
-    });
-    return unsubscribe;
-  }, [clientId]);
-
-  // إغلاق قوائم الإشعارات/حسابي لو ضغط المستخدم برّه المنطقة
-  useEffect(() => {
-    function handleOutsideClick(e) {
-      if (headerIconsRef.current && !headerIconsRef.current.contains(e.target)) setOpenPanel(null);
-    }
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
-
-  const unreadCount = useMemo(() => (notifications || []).filter((n) => !n.read).length, [notifications]);
-
-  async function handleMarkRead(id) {
-    setNotifications((list) => (list || []).map((n) => (n.id === id ? { ...n, read: true } : n)));
-    try {
-      await markNotificationRead(id);
-    } catch {
-      // تعليم القراءة فشل بصمت، مش لازم يعطل باقي اللوحة
-    }
-  }
-
-  async function handleMarkAllRead() {
-    setNotifications((list) => (list || []).map((n) => ({ ...n, read: true })));
-    try {
-      await markAllNotificationsRead();
-    } catch {
-      // نفس الشيء، فشل صامت
-    }
-  }
-
-  function goToSection(id) {
-    setActiveSection(id);
-    setOpenPanel(null);
-    setMobileNavOpen(false);
-  }
 
   const displayName = profile?.full_name?.trim() || "عميل عزيز";
+  const unreadCount = useMemo(() => (notifications || []).filter((n) => !n.read).length, [notifications]);
 
   const activeMeta = useMemo(
     () => SECTIONS.find((s) => s.id === activeSection) || SECTIONS[0],
@@ -416,57 +205,19 @@ export default function ClientDashboard({ onLogout }) {
             </div>
           </div>
 
-          <div className="flex items-center" style={{ gap: 10, alignSelf: "flex-start" }}>
-            <div ref={headerIconsRef} className="flex items-center" style={{ gap: 10, position: "relative" }}>
-              <div style={{ position: "relative" }}>
-                <HeaderIconButton
-                  icon="🔔"
-                  label="الإشعارات"
-                  badge={unreadCount}
-                  active={openPanel === "bell"}
-                  onClick={() => setOpenPanel((p) => (p === "bell" ? null : "bell"))}
-                />
-                {openPanel === "bell" && (
-                  <NotificationBellPanel
-                    notifications={notifications}
-                    onMarkRead={handleMarkRead}
-                    onMarkAllRead={handleMarkAllRead}
-                    onViewAll={() => goToSection("notifications")}
-                  />
-                )}
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <HeaderIconButton
-                  icon="👤"
-                  label="حسابي"
-                  active={openPanel === "account"}
-                  onClick={() => setOpenPanel((p) => (p === "account" ? null : "account"))}
-                />
-                {openPanel === "account" && (
-                  <AccountMenuPanel
-                    profile={profile}
-                    email={email}
-                    onGoProfile={() => goToSection("profile")}
-                    onLogout={onLogout}
-                  />
-                )}
-              </div>
-            </div>
-
-            <button
-              onClick={() => setMobileNavOpen((v) => !v)}
-              className="lg:hidden"
-              style={{
-                padding: "9px 14px", borderRadius: 12,
-                border: "1px solid rgba(201,150,58,0.35)",
-                background: "rgba(255,255,255,0.03)", color: GOLD2,
-                fontWeight: 700, fontSize: 13, cursor: "pointer",
-              }}
-            >
-              {mobileNavOpen ? "إغلاق القائمة ✕" : "أقسام اللوحة ☰"}
-            </button>
-          </div>
+          <button
+            onClick={() => setMobileNavOpen((v) => !v)}
+            className="lg:hidden"
+            style={{
+              alignSelf: "flex-start",
+              padding: "9px 14px", borderRadius: 12,
+              border: "1px solid rgba(201,150,58,0.35)",
+              background: "rgba(255,255,255,0.03)", color: GOLD2,
+              fontWeight: 700, fontSize: 13, cursor: "pointer",
+            }}
+          >
+            {mobileNavOpen ? "إغلاق القائمة ✕" : "أقسام اللوحة ☰"}
+          </button>
         </div>
 
         {/* ==================== Body: Sidebar + Content ==================== */}
@@ -499,6 +250,18 @@ export default function ClientDashboard({ onLogout }) {
                 >
                   <span style={{ fontSize: 16 }}>{s.icon}</span>
                   <span>{s.label}</span>
+                  {s.id === "notifications" && unreadCount > 0 && (
+                    <span
+                      style={{
+                        marginRight: "auto", minWidth: 18, height: 18, borderRadius: 9, padding: "0 4px",
+                        background: activeSection === s.id ? "rgba(0,0,0,0.25)" : "linear-gradient(135deg,#ff6a6a,#d43b3b)",
+                        color: "#fff", fontSize: 10.5, fontWeight: 900,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>
@@ -546,8 +309,8 @@ export default function ClientDashboard({ onLogout }) {
                   refreshProfile={loadProfile}
                   notify={notify}
                   notifications={notifications}
-                  onMarkRead={handleMarkRead}
-                  onMarkAllRead={handleMarkAllRead}
+                  onNotificationClick={onNotificationClick}
+                  onMarkAllRead={onMarkAllRead}
                 />
               )}
             </div>
@@ -1162,9 +925,7 @@ function InvoicesSection() {
 // ============================================================================
 // 10) الإشعارات
 // ============================================================================
-const NOTIF_ICONS = NOTIF_ICONS_MAP;
-
-function NotificationsSection({ notifications, onMarkRead, onMarkAllRead }) {
+function NotificationsSection({ notifications, onNotificationClick, onMarkAllRead }) {
   const items = notifications;
   const hasUnread = (items || []).some((n) => !n.read);
 
@@ -1187,25 +948,28 @@ function NotificationsSection({ notifications, onMarkRead, onMarkAllRead }) {
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {items.map((n) => (
-          <button
-            key={n.id}
-            onClick={() => !n.read && onMarkRead(n.id)}
-            style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12,
-              background: n.read ? "rgba(255,255,255,0.02)" : "rgba(201,150,58,0.08)",
-              border: `1px solid ${n.read ? "rgba(255,255,255,0.06)" : "rgba(201,150,58,0.3)"}`,
-              width: "100%", textAlign: "right", cursor: n.read ? "default" : "pointer", fontFamily: FONT,
-            }}
-          >
-            <span style={{ fontSize: 18 }}>{NOTIF_ICONS[n.type] || NOTIF_ICONS.default}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#fff", fontSize: 13, fontWeight: n.read ? 600 : 800 }}>{n.title}</div>
-              <div style={{ color: "#888", fontSize: 11 }}>{n.date}</div>
-            </div>
-            {!n.read && <span style={{ width: 8, height: 8, borderRadius: "50%", background: GOLD, flexShrink: 0 }} />}
-          </button>
-        ))}
+        {items.map((n) => {
+          const clickable = !n.read || (n.linkType && n.linkId);
+          return (
+            <button
+              key={n.id}
+              onClick={() => clickable && onNotificationClick(n)}
+              style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12,
+                background: n.read ? "rgba(255,255,255,0.02)" : "rgba(201,150,58,0.08)",
+                border: `1px solid ${n.read ? "rgba(255,255,255,0.06)" : "rgba(201,150,58,0.3)"}`,
+                width: "100%", textAlign: "right", cursor: clickable ? "pointer" : "default", fontFamily: FONT,
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{NOTIF_ICONS[n.type] || NOTIF_ICONS.default}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: "#fff", fontSize: 13, fontWeight: n.read ? 600 : 800 }}>{n.title}</div>
+                <div style={{ color: "#888", fontSize: 11 }}>{n.date}</div>
+              </div>
+              {!n.read && <span style={{ width: 8, height: 8, borderRadius: "50%", background: GOLD, flexShrink: 0 }} />}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -243,7 +243,15 @@ export async function getInvoices() {
 // الإشعارات — جدول حقيقي: notifications
 // ----------------------------------------------------------------------------
 function mapNotificationRow(n) {
-  return { id: n.id, title: n.title, date: formatDate(n.notif_date || n.created_at), type: n.notif_type, read: n.is_read };
+  return {
+    id: n.id,
+    title: n.title,
+    date: formatDate(n.notif_date || n.created_at),
+    type: n.notif_type,
+    read: n.is_read,
+    linkType: n.link_type || null,
+    linkId: n.link_id || null,
+  };
 }
 
 export async function getNotifications() {

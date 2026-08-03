@@ -185,15 +185,17 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
       }
 
       const wasPublished = isEdit && item.status === CONTENT_STATUS.PUBLISHED;
-      if (isEdit) await updateContent(entity, item.id, payload);
-      else await createContent(entity, payload);
+      const saved = isEdit ? await updateContent(entity, item.id, payload) : await createContent(entity, payload);
 
-      // إشعار تلقائي لكل العملاء عند نشر منشور جديد (لأول مرة)
+      // إشعار تلقائي لكل العملاء عند نشر منشور جديد (لأول مرة) — مربوط بالمنشور
+      // نفسه عشان لما العميل يضغط على الإشعار ينتقل لصفحة المنشور مباشرة.
       if (entity === "sitePosts" && payload.status === CONTENT_STATUS.PUBLISHED && !wasPublished) {
         broadcastNotificationToAll({
           title: buildPostNotificationTitle({ category: payload.category, title: payload.title }),
           notifType: "campaign",
           notifDate: new Date().toISOString().slice(0, 10),
+          linkType: "sitePost",
+          linkId: saved.id,
         }).catch(() => {}); // فشل الإشعار مايوقفش حفظ المنشور
       }
 
@@ -329,6 +331,8 @@ function EntitySection({ entity }) {
         title: buildPostNotificationTitle({ category: updated.category, title: updated.title }),
         notifType: "campaign",
         notifDate: new Date().toISOString().slice(0, 10),
+        linkType: "sitePost",
+        linkId: updated.id,
       }).catch(() => {});
     }
   }
