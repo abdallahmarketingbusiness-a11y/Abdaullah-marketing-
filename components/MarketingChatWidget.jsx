@@ -227,7 +227,7 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
           width: 60,
           height: 60,
           borderRadius: "50%",
-          background: "radial-gradient(circle at 35% 30%, #201b12, #0c0a07)",
+          background: `linear-gradient(135deg, ${GOLD3}, ${GOLD})`,
           boxShadow: "0 4px 24px rgba(201,150,58,0.45)",
           display: "flex",
           alignItems: "center",
@@ -235,10 +235,9 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
           border: "none",
           cursor: "pointer",
           fontSize: 26,
-          overflow: "hidden",
         }}
       >
-        {open ? "✕" : <img src="/images/icons/icon-ai.png" alt="مساعد ذكي" style={{ width: "78%", height: "78%", objectFit: "contain" }} />}
+        {open ? "✕" : "🤖"}
         {hasUnread && !open && (
           <span
             style={{
@@ -297,10 +296,9 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
                 justifyContent: "center",
                 fontSize: 18,
                 flexShrink: 0,
-                overflow: "hidden",
               }}
             >
-              <img src="/images/icons/icon-ai.png" alt="" style={{ width: "76%", height: "76%", objectFit: "contain" }} />
+              🤖
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#060606", fontWeight: 800, fontSize: 14 }}>
