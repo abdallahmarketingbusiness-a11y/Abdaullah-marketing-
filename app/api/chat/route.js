@@ -9,6 +9,13 @@
 //
 // الموديل المستخدم: gemini-flash-latest — سريع ورخيص ومناسب لمحادثات
 // تسويقية. لو حبيت موديل تاني غيّر قيمة MODEL تحت (مثلاً gemini-pro-latest).
+//
+// ⚠️ الشات ده بقى لازم العميل يكون مسجّل دخول (شوف MarketingChatWidget.jsx):
+// كل رسالة بتتحفظ في جدول ai_chat_messages مربوطة بمحادثة (ai_chat_conversations)
+// مربوطة بحساب العميل، عشان تظهر لاحقًا في لوحة الأدمن تحت "محادثات الذكاء
+// الاصطناعي" (عميل → محادثاته → ملخص + عرض كامل).
+
+import { getSupabaseService } from "../../../lib/supabaseServiceClient";
 
 export const runtime = "nodejs";
 
@@ -60,25 +67,48 @@ const SYSTEM_PROMPT = `أنتَ "خبير عبدالله ماركتنج" — م�
 هدفك النهائي: إن أي زائر للموقع يحس إنه بيكلم أذكى وأقوى استشاري تسويق ممكن يوصله، وإن التجربة
 دي نفسها تعكس جودة واحترافية "Abdullah Marketing".`;
 
-function buildGeminiContents(clientMessages) {
-  // بنقبل بس role: user/assistant ومحتوى نصي، وبنقص أي حاجة زيادة أو غريبة.
-  const trimmed = Array.isArray(clientMessages)
-    ? clientMessages.slice(-MAX_HISTORY_MESSAGES)
-    : [];
+// System prompt منفصل ومختصر لتوليد ملخص المحادثة (مش هيتقال للعميل، ده
+// نداء تاني منفصل بيروح لنفس Gemini بعد ما يخلص رد المساعد على العميل).
+const SUMMARY_SYSTEM_PROMPT = `مهمتك الوحيدة: تلخيص محادثة بين عميل وشات ذكاء اصطناعي تسويقي اسمه
+"خبير عبدالله ماركتنج"، عشان صاحب الوكالة (عبدالله) يقدر ياخد فكرة سريعة عن المحادثة من غير
+ما يقرأها كاملة.
 
-  return trimmed
-    .filter(
-      (m) =>
-        m &&
-        (m.role === "user" || m.role === "assistant") &&
-        typeof m.content === "string" &&
-        m.content.trim().length > 0
-    )
+اكتب ملخص من 2-4 جمل بالعربي (مصري بسيط)، يغطي:
+- إيه اللي كان العميل محتاجه أو بيسأل عنه فعليًا (نوع البيزنس لو اتقال، المشكلة أو الهدف).
+- أهم حاجة اتقالت له أو اتقترحت عليه.
+- لو العميل مهتم بخدمة معينة أو مستني يتواصل مع عبدالله، اذكر ده صراحة في آخر الملخص.
+
+ما تكتبش أي مقدمة زي "الملخص:" أو "في المحادثة دي"، ابدأ بالمحتوى على طول. من غير نقط أو
+عناوين — فقرة نصية عادية بس.`;
+
+function buildGeminiContents(rows) {
+  return rows
+    .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+    .slice(-MAX_HISTORY_MESSAGES)
     .map((m) => ({
-      // Gemini بيستخدم "model" بدل "assistant"
       role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content.slice(0, 6000) }], // حماية بسيطة من رسائل ضخمة جدًا
+      parts: [{ text: m.content.slice(0, 6000) }],
     }));
+}
+
+// نداء بسيط (غير Streaming) لـ Gemini — بيستخدم لتوليد الملخص بعد كل تبادل
+async function callGeminiOnce({ apiKey, systemText, contents, maxTokens }) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-goog-api-key": apiKey,
+    },
+    body: JSON.stringify({
+      contents,
+      systemInstruction: { parts: [{ text: systemText }] },
+      generationConfig: { maxOutputTokens: maxTokens },
+    }),
+  });
+  if (!res.ok) return null;
+  const data = await res.json().catch(() => null);
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
 }
 
 export async function POST(req) {
@@ -87,25 +117,86 @@ export async function POST(req) {
     if (!apiKey) {
       return new Response(
         JSON.stringify({
-          error:
-            "المساعد الذكي مش مفعّل لسه — لازم تضيف GEMINI_API_KEY في إعدادات السيرفر.",
+          error: "المساعد الذكي مش مفعّل لسه — لازم تضيف GEMINI_API_KEY في إعدادات السيرفر.",
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const body = await req.json().catch(() => ({}));
-    const contents = buildGeminiContents(body?.messages);
-
-    if (contents.length === 0) {
+    // 1) التحقق من هوية العميل (لازم يكون مسجّل دخول)
+    const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) {
       return new Response(
-        JSON.stringify({ error: "من فضلك اكتب رسالة الأول." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: "لازم تسجّل الدخول الأول عشان تستخدم المساعد الذكي." }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`;
+    const supabaseService = getSupabaseService();
+    const { data: userData, error: userError } = await supabaseService.auth.getUser(token);
+    if (userError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: "جلسة الدخول غير صالحة، سجّل الدخول تاني." }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const clientId = userData.user.id;
 
+    const body = await req.json().catch(() => ({}));
+    const clientMessages = Array.isArray(body?.messages) ? body.messages : [];
+    const lastUserMessage = [...clientMessages].reverse().find((m) => m?.role === "user");
+    const userText = typeof lastUserMessage?.content === "string" ? lastUserMessage.content.trim() : "";
+
+    if (!userText) {
+      return new Response(JSON.stringify({ error: "من فضلك اكتب رسالة الأول." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // 2) هات المحادثة الحالية أو اعمل واحدة جديدة (conversationId اختياري
+    // جاي من الفرونت عشان نفرّق بين "افتح شات جديد" و"استكمال نفس الشات")
+    let conversationId = typeof body?.conversationId === "string" ? body.conversationId : null;
+
+    if (conversationId) {
+      const { data: existing } = await supabaseService
+        .from("ai_chat_conversations")
+        .select("id")
+        .eq("id", conversationId)
+        .eq("client_id", clientId)
+        .maybeSingle();
+      if (!existing) conversationId = null; // مش لقيها أو مش بتاعته → هنعمل واحدة جديدة
+    }
+
+    if (!conversationId) {
+      const { data: created, error: createError } = await supabaseService
+        .from("ai_chat_conversations")
+        .insert({ client_id: clientId, last_message_preview: userText.slice(0, 200) })
+        .select("id")
+        .single();
+      if (createError) throw createError;
+      conversationId = created.id;
+    }
+
+    // 3) احفظ رسالة العميل
+    await supabaseService.from("ai_chat_messages").insert({
+      conversation_id: conversationId,
+      role: "user",
+      content: userText.slice(0, 6000),
+    });
+
+    // 4) هات الرسائل من قاعدة البيانات (مش من الفرونت) عشان الهيستوري يبقى
+    // موثوق ومتطابق مع اللي اتخزن فعلاً
+    const { data: historyRows } = await supabaseService
+      .from("ai_chat_messages")
+      .select("role, content")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+
+    const contents = buildGeminiContents(historyRows || []);
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`;
     const upstream = await fetch(url, {
       method: "POST",
       headers: {
@@ -114,12 +205,8 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         contents,
-        systemInstruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
-        },
-        generationConfig: {
-          maxOutputTokens: MAX_TOKENS,
-        },
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        generationConfig: { maxOutputTokens: MAX_TOKENS },
       }),
     });
 
@@ -127,18 +214,15 @@ export async function POST(req) {
       const errText = await upstream.text().catch(() => "");
       console.error("Gemini API error:", upstream.status, errText);
       return new Response(
-        JSON.stringify({
-          error: "حصل خطأ أثناء التواصل مع المساعد الذكي، جرب تاني كمان شوية.",
-        }),
+        JSON.stringify({ error: "حصل خطأ أثناء التواصل مع المساعد الذكي، جرب تاني كمان شوية." }),
         { status: 502, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // بنحوّل الـ SSE الأصلي من Gemini لتيار نصي بسيط (plain text chunks)
-    // عشان الفرونت يقدر يعرضه تدريجيًا من غير ما يحتاج يفهم فورمات SSE.
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     let buffer = "";
+    let fullReply = "";
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -160,9 +244,11 @@ export async function POST(req) {
 
               try {
                 const evt = JSON.parse(jsonStr);
-                const text =
-                  evt?.candidates?.[0]?.content?.parts?.[0]?.text;
+                const text = evt?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (typeof text === "string" && text.length > 0) {
+                  fullReply += text;
+                  // أول جزء من الـ stream بنبعت معاه سطر خفي فيه الـ conversationId
+                  // عشان الفرونت يعرف يبعته في الرسالة الجاية (نفس المحادثة)
                   controller.enqueue(encoder.encode(text));
                 }
               } catch {
@@ -174,6 +260,52 @@ export async function POST(req) {
           console.error("Stream read error:", err);
         } finally {
           controller.close();
+
+          // 5) بعد ما خلص الرد: احفظه + حدّث الملخص — من غير ما نستنى ده
+          // (best-effort، لو فشل مش هيأثر على تجربة العميل)
+          (async () => {
+            try {
+              if (fullReply.trim()) {
+                await supabaseService.from("ai_chat_messages").insert({
+                  conversation_id: conversationId,
+                  role: "assistant",
+                  content: fullReply.slice(0, 6000),
+                });
+              }
+
+              const { data: allRows } = await supabaseService
+                .from("ai_chat_messages")
+                .select("role, content")
+                .eq("conversation_id", conversationId)
+                .order("created_at", { ascending: true });
+
+              const summaryContents = buildGeminiContents(allRows || []).concat([
+                {
+                  role: "user",
+                  parts: [{ text: "لخّص المحادثة اللي فوق دي حسب التعليمات." }],
+                },
+              ]);
+
+              const summary = await callGeminiOnce({
+                apiKey,
+                systemText: SUMMARY_SYSTEM_PROMPT,
+                contents: summaryContents,
+                maxTokens: 200,
+              });
+
+              await supabaseService
+                .from("ai_chat_conversations")
+                .update({
+                  summary: summary?.trim() || undefined,
+                  last_message_preview: fullReply.slice(0, 200) || userText.slice(0, 200),
+                  last_message_at: new Date().toISOString(),
+                  messages_count: (allRows || []).length,
+                })
+                .eq("id", conversationId);
+            } catch (bgErr) {
+              console.error("Post-chat save/summary error:", bgErr);
+            }
+          })();
         }
       },
     });
@@ -182,13 +314,14 @@ export async function POST(req) {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
+        "X-Conversation-Id": conversationId,
       },
     });
   } catch (err) {
     console.error("Chat route error:", err);
-    return new Response(
-      JSON.stringify({ error: "حصل خطأ غير متوقع، جرب تاني." }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "حصل خطأ غير متوقع، جرب تاني." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

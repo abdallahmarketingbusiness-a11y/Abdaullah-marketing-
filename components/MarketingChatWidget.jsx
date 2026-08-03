@@ -9,7 +9,10 @@ const GOLD3 = "#F5D78E";
 const WELCOME_MESSAGE =
   "أهلاً بيك 👋 أنا مساعد عبدالله ماركتنج الذكي — خبير في التسويق الرقمي والسوشيال ميديا.\nاسألني عن أي حاجة: إعلانات ممولة، محتوى وريلز، تسويق مطاعم، استراتيجية براند... أي سؤال تسويقي هساعدك فيه بجدية 🔥";
 
-export default function MarketingChatWidget() {
+// clientSession: جلسة Supabase بتاعة العميل (زي ما بترجع من signInClient/
+// signUpClient) أو null لو مسجّلش دخول. لازم العميل يكون مسجّل دخول عشان
+// يستخدم الشات، لأن كل محادثة بتتحفظ مربوطة بحسابه في لوحة الأدمن.
+export default function MarketingChatWidget({ clientSession, setPage }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: "assistant", content: WELCOME_MESSAGE },
@@ -18,8 +21,10 @@ export default function MarketingChatWidget() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasUnread, setHasUnread] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
+  const isLoggedIn = !!clientSession?.access_token;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -41,6 +46,7 @@ export default function MarketingChatWidget() {
   async function sendMessage() {
     const text = input.trim();
     if (!text || loading) return;
+    if (!isLoggedIn) return; // شبكة أمان إضافية، الزرار أصلاً بيتعطل من غير تسجيل دخول
 
     const nextMessages = [...messages, { role: "user", content: text }];
     setMessages(nextMessages);
@@ -55,8 +61,11 @@ export default function MarketingChatWidget() {
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${clientSession.access_token}`,
+        },
+        body: JSON.stringify({ messages: nextMessages, conversationId }),
       });
 
       if (!res.ok || !res.body) {
@@ -67,6 +76,9 @@ export default function MarketingChatWidget() {
         } catch {}
         throw new Error(msg);
       }
+
+      const returnedConversationId = res.headers.get("X-Conversation-Id");
+      if (returnedConversationId) setConversationId(returnedConversationId);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -280,7 +292,65 @@ export default function MarketingChatWidget() {
             )}
           </div>
 
-          {/* صندوق الكتابة */}
+          {/* صندوق الكتابة — أو دعوة لتسجيل الدخول لو مفيش حساب */}
+          {!isLoggedIn ? (
+            <div
+              style={{
+                borderTop: "1px solid #1e1e1e",
+                padding: "16px 14px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+                background: "#0a0a0a",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ color: "#ccc", fontSize: 12.5, lineHeight: 1.7 }}>
+                لازم يكون عندك حساب عشان تستخدم المساعد الذكي 🔒
+              </div>
+              <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setPage?.("login");
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    borderRadius: 10,
+                    border: `1px solid ${GOLD}66`,
+                    background: "transparent",
+                    color: GOLD2,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  تسجيل الدخول
+                </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setPage?.("signup");
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    borderRadius: 10,
+                    border: "none",
+                    background: `linear-gradient(135deg, ${GOLD3}, ${GOLD})`,
+                    color: "#060606",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  إنشاء حساب
+                </button>
+              </div>
+            </div>
+          ) : (
           <div
             style={{
               borderTop: "1px solid #1e1e1e",
@@ -340,6 +410,7 @@ export default function MarketingChatWidget() {
               ➤
             </button>
           </div>
+          )}
         </div>
       )}
     </>
