@@ -161,42 +161,49 @@ const SYSTEM_PROMPT = `أنتَ "خبير عبدالله ماركتنج" — م�
 هدفك النهائي: إن أي زائر للموقع يحس إنه بيكلم أذكى وأقوى استشاري تسويق وبيزنس ممكن يوصله، وإن
 التجربة دي نفسها تعكس جودة واحترافية "Abdullah Marketing".`;
 
-// System prompt منفصل ومختصر لتوليد ملخص المحادثة (نداء تاني منفصل، مش هيتقال للعميل)
-const SUMMARY_SYSTEM_PROMPT = `مهمتك الوحيدة: تلخيص محادثة بين عميل وشات ذكاء اصطناعي تسويقي اسمه
-"خبير عبدالله ماركتنج"، عشان صاحب الوكالة (عبدالله) يقدر ياخد فكرة سريعة عن المحادثة من غير
-ما يقرأها كاملة.
+// System prompt واحد مدموج بيعمل مهمتين في نداء واحد بدل نداءين منفصلين:
+// (1) ملخص قصير للمحادثة (يظهر في لوحة الأدمن)، (2) تحديث ذاكرة العميل
+// الدائمة. الدمج ده بيقلل عدد استدعاءات Gemini من 3 لكل رسالة (رد + ملخص +
+// ذاكرة) لـ 2 بس (رد + نداء مدموج واحد) — توفير حقيقي في الكوتة المجانية
+// (Free Tier) من غير ما نفقد أي وظيفة من الاتنين.
+const SUMMARY_AND_MEMORY_SYSTEM_PROMPT = `عندك مهمتين منفصلتين تمامًا لمساعد ذكاء اصطناعي تسويقي اسمه
+"خبير عبدالله ماركتنج" — نفّذهم الاتنين ورجّع الناتج بالشكل المحدد تحت بالظبط.
 
-اكتب ملخص من 2-4 جمل بالعربي (مصري بسيط)، يغطي:
+═══ المهمة الأولى: ملخص المحادثة ═══
+هتاخد المحادثة كاملة (هتلاقيها في رسائل المستخدم اللي قبل السطر ده). اكتب ملخص من 2-4 جمل
+بالعربي (مصري بسيط)، يغطي:
 - إيه اللي كان العميل محتاجه أو بيسأل عنه فعليًا (نوع البيزنس لو اتقال، المشكلة أو الهدف).
 - أهم حاجة اتقالت له أو اتقترحت عليه.
 - لو العميل مهتم بخدمة معينة أو مستني يتواصل مع عبدالله، اذكر ده صراحة في آخر الملخص.
+ما تكتبش أي مقدمة زي "الملخص:" — فقرة نصية عادية بس من غير نقط أو عناوين.
 
-ما تكتبش أي مقدمة زي "الملخص:" أو "في المحادثة دي"، ابدأ بالمحتوى على طول. من غير نقط أو
-عناوين — فقرة نصية عادية بس.`;
-
-// System prompt لتحديث "ذاكرة العميل الدائمة" — بياخد الذاكرة القديمة (لو
-// موجودة) + المحادثة الحالية، ويرجّع نسخة محدّثة ومُدمجة من الحقائق (مش
-// بيضيف نص فوق نص، بيعيد صياغة الكل في نسخة واحدة نضيفة ومختصرة).
-const MEMORY_UPDATE_SYSTEM_PROMPT = `مهمتك: الحفاظ على ملف "ذاكرة" مختصر ومفيد عن عميل معيّن
-لمساعد ذكاء اصطناعي تسويقي اسمه "خبير عبدالله ماركتنج"، عشان يفتكره في أي محادثة جديدة.
-
-هتاخد: (1) الذاكرة الحالية عن العميل لو موجودة، (2) آخر محادثة حصلت معاه. مهمتك تدمجهم في نسخة
-واحدة محدّثة من الذاكرة — مش تضيف نص فوق نص، لكن تعيد صياغة كل الحقائق المهمة (القديمة + الجديدة)
-في ملف واحد مختصر ومنظم.
-
-اكتب الذاكرة كنقط قصيرة (bullet points بعلامة "-")، كل نقطة حقيقة واحدة واضحة، تغطي لو متوفر:
+═══ المهمة الثانية: تحديث ذاكرة العميل الدائمة ═══
+هتلاقي تحت (لو موجودة) "الذاكرة الحالية عن العميل" + "آخر تبادل" بين العميل والمساعد. ادمجهم في
+نسخة واحدة محدّثة من الذاكرة — مش تضيف نص فوق نص، أعد صياغة كل الحقائق المهمة (القديمة + الجديدة)
+في ملف واحد مختصر ومنظم، كنقط قصيرة (بعلامة "-")، كل نقطة حقيقة واحدة واضحة، تغطي لو متوفر:
 - نوع نشاطه/مشروعه التجاري ومجاله.
 - أهدافه التسويقية أو التجارية اللي ذكرها.
-- تفضيلاته أو قراراته (مثلاً: قرر يركز على إنستجرام، رافض يعمل تيك توك، عايز يستهدف فئة معينة).
+- تفضيلاته أو قراراته (مثلاً: قرر يركز على إنستجرام، رافض يعمل تيك توك).
 - أي مشكلة أو تحدي بيواجهه ذكره أكتر من مرة.
 - أي معلومة شخصية مهنية ذات صلة (اسم نشاطه، لو ذكر مكانه).
+قواعد صارمة: ما تكتبش تفاصيل عابرة ملهاش قيمة تُفتكر، ما تكررش نفس الحقيقة مرتين، لو حقيقة قديمة
+اتناقضت مع حاجة جديدة احذف القديمة، أقصى حد حوالي 15 نقطة (احذف الأقل أهمية لو زاد). لو مفيش أي
+حقيقة تستاهل تتسجل، سيب القسم ده فاضي.
 
-قواعد صارمة:
-- ما تكتبش تفاصيل عابرة أو أسئلة تقنية بسيطة ملهاش قيمة تُفتكر (زي "سأل عن تعريف الـ SEO").
-- ما تكررش نفس الحقيقة مرتين بصياغتين مختلفتين — ادمجها في نقطة واحدة.
-- لو حقيقة قديمة اتناقضت مع حاجة جديدة (مثلاً غيّر نوع نشاطه)، احذف القديمة واكتب الجديدة بس.
-- أقصى حد حوالي 15 نقطة — لو زاد عن كده، احذف الأقل أهمية أو الأقدم واحتفظ بالأهم والأحدث.
-- من غير أي مقدمة أو خاتمة، ابدأ بالنقط على طول. لو مفيش أي حقيقة تستاهل تتسجل، رجّع سطر فاضي.`;
+═══ شكل الرد المطلوب (اتبعه بالظبط، من غير أي نص زيادة قبله أو بعده) ═══
+===SUMMARY===
+(الملخص هنا)
+===MEMORY===
+(نقط الذاكرة هنا، أو سطر فاضي لو مفيش جديد يستاهل)`;
+
+function parseSummaryAndMemory(raw) {
+  const text = (raw || "").trim();
+  const memoryIdx = text.indexOf("===MEMORY===");
+  if (memoryIdx === -1) return { summary: text.replace(/^===SUMMARY===\s*/, "").trim(), memory: "" };
+  const summaryPart = text.slice(0, memoryIdx).replace(/^===SUMMARY===\s*/, "").trim();
+  const memoryPart = text.slice(memoryIdx + "===MEMORY===".length).trim();
+  return { summary: summaryPart, memory: memoryPart };
+}
 
 function buildGeminiContents(rows) {
   return rows
@@ -491,7 +498,8 @@ export async function POST(req) {
         } finally {
           controller.close();
 
-          // 5) بعد ما خلص الرد: احفظه + حدّث الملخص — من غير ما نستنى ده
+          // 5) بعد ما خلص الرد: احفظه + حدّث الملخص والذاكرة بنداء واحد مدموج
+          // (بدل نداءين منفصلين) — توفير حقيقي في الكوتة المجانية.
           (async () => {
             try {
               if (fullReply.trim()) {
@@ -508,66 +516,53 @@ export async function POST(req) {
                 .eq("conversation_id", conversationId)
                 .order("created_at", { ascending: true });
 
-              const summaryContents = buildGeminiContents(allRows || []).concat([
-                {
-                  role: "user",
-                  parts: [{ text: "لخّص المحادثة اللي فوق دي حسب التعليمات." }],
-                },
+              // هات الذاكرة الحالية (لو موجودة) عشان تتحط في نفس النداء المدموج
+              const { data: existingMemory } = await supabaseService
+                .from("ai_client_memory")
+                .select("memory_text")
+                .eq("client_id", clientId)
+                .maybeSingle();
+
+              const combinedPromptParts = [
+                "لخّص المحادثة اللي فوق دي وحدّث ذاكرة العميل حسب التعليمات.",
+              ];
+              if (existingMemory?.memory_text?.trim()) {
+                combinedPromptParts.push(
+                  `الذاكرة الحالية عن العميل:\n${existingMemory.memory_text.trim()}`
+                );
+              }
+
+              const combinedContents = buildGeminiContents(allRows || []).concat([
+                { role: "user", parts: [{ text: combinedPromptParts.join("\n\n---\n\n") }] },
               ]);
 
-              const summary = await callGeminiOnce({
+              const combinedRaw = await callGeminiOnce({
                 apiKey,
-                systemText: SUMMARY_SYSTEM_PROMPT,
-                contents: summaryContents,
-                maxTokens: 300,
+                systemText: SUMMARY_AND_MEMORY_SYSTEM_PROMPT,
+                contents: combinedContents,
+                maxTokens: 700,
               });
+
+              const { summary, memory } = parseSummaryAndMemory(combinedRaw);
 
               await supabaseService
                 .from("ai_chat_conversations")
                 .update({
-                  summary: summary?.trim() || undefined,
+                  summary: summary || undefined,
                   last_message_preview: (fullReply || userText).slice(0, 200),
                   last_message_at: new Date().toISOString(),
                   messages_count: (allRows || []).length,
                 })
                 .eq("id", conversationId);
 
-              // 6) حدّث ذاكرة العميل الدائمة — بندمج الذاكرة القديمة (لو
-              // موجودة) مع آخر تبادل حصل، ونولّد نسخة محدّثة من الحقائق.
-              // ده اللي بيخلي المساعد "يفتكر" العميل حتى في محادثة جديدة
-              // تمامًا، مش بس جوه نفس المحادثة.
-              try {
-                const { data: existingMemory } = await supabaseService
-                  .from("ai_client_memory")
-                  .select("memory_text")
-                  .eq("client_id", clientId)
-                  .maybeSingle();
-
-                const memoryPromptParts = [];
-                if (existingMemory?.memory_text?.trim()) {
-                  memoryPromptParts.push(
-                    `الذاكرة الحالية عن العميل:\n${existingMemory.memory_text.trim()}`
-                  );
-                }
-                memoryPromptParts.push(
-                  `آخر رسالة من العميل: ${userText}\n\nرد المساعد عليها: ${fullReply || "(بدون رد مسجّل)"}`
-                );
-
-                const updatedMemory = await callGeminiOnce({
-                  apiKey,
-                  systemText: MEMORY_UPDATE_SYSTEM_PROMPT,
-                  contents: [{ role: "user", parts: [{ text: memoryPromptParts.join("\n\n---\n\n") }] }],
-                  maxTokens: 500,
-                });
-
-                const cleanMemory = updatedMemory?.trim();
-                if (cleanMemory) {
+              if (memory) {
+                try {
                   await supabaseService
                     .from("ai_client_memory")
-                    .upsert({ client_id: clientId, memory_text: cleanMemory }, { onConflict: "client_id" });
+                    .upsert({ client_id: clientId, memory_text: memory }, { onConflict: "client_id" });
+                } catch (memErr) {
+                  console.error("Memory update error:", memErr);
                 }
-              } catch (memErr) {
-                console.error("Memory update error:", memErr);
               }
             } catch (bgErr) {
               console.error("Post-chat save/summary error:", bgErr);
