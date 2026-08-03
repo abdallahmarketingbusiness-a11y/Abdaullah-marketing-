@@ -17,6 +17,7 @@ import {
 } from "../services/portfolioService";
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
+import { fetchVisibleBasicPackages } from "../services/basicPackagesService";
 import AnnouncementBar from "../components/AnnouncementBar";
 import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
 import { fetchPublished } from "../services/contentService";
@@ -1211,12 +1212,40 @@ function BuilderPage({ setPage, initialData }) {
 }
 
 
+// تحويل لون hex لـ rgb (مستخدمة لتوليد توهج/تدرّج تلقائي للباقات القادمة من قاعدة البيانات)
+function hexToRgbParts(hex) {
+  const h = (hex || "#C9963A").replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const num = parseInt(full, 16) || 0xc9963a;
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+function pkgGlow(hex, alpha = 0.35) {
+  const { r, g, b } = hexToRgbParts(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function pkgDark(hex, amount) {
+  const { r, g, b } = hexToRgbParts(hex);
+  const f = (v) => Math.round(v * (1 - amount));
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+
 function PricingSection({ setPage }) {
   const [active, setActive] = useState(null);
   const [subscribingPkg, setSubscribingPkg] = useState(null);
+  const [dbPackages, setDbPackages] = useState(null); // null = لسه بيحمّل، [] = محملة وفاضية
   const WA = WA_LINK;
 
-  const packages = [
+  useEffect(() => {
+    let alive = true;
+    fetchVisibleBasicPackages()
+      .then((rows) => { if (alive) setDbPackages(rows || []); })
+      .catch(() => { if (alive) setDbPackages([]); }); // فشل الاتصال؟ رجّع للباقات الثابتة تحت من غير ما يكسر الصفحة
+    return () => { alive = false; };
+  }, []);
+
+  // الباقات الأساسية الثابتة (نسخة احتياطية تشتغل تلقائيًا لو جدول
+  // basic_packages لسه فاضي أو الـ migration لسه ما اتشغلش)
+  const legacyPackages = [
     {
       id: 1,
       icon: "🥉",
@@ -1296,6 +1325,24 @@ function PricingSection({ setPage }) {
     },
   ];
 
+  // لو قاعدة البيانات فيها باقات أساسية (اتضافت/اتعدّلت من لوحة الأدمن) نعرضها،
+  // وإلا (لسه ما اتعملش migration_basic_packages.sql) نرجع للباقات الثابتة
+  // فوق من غير ما تختفي الأسعار من الموقع لحظة واحدة.
+  const packages =
+    dbPackages && dbPackages.length > 0
+      ? dbPackages.map((p) => ({
+          id: p.id,
+          icon: p.icon,
+          tier: p.tier,
+          price: Number(p.price).toLocaleString("en-US"),
+          badge: p.badge || null,
+          color: p.color,
+          glow: pkgGlow(p.color, 0.35),
+          gradient: `linear-gradient(135deg,${pkgDark(p.color, 0.92)},${pkgDark(p.color, 0.85)})`,
+          features: p.features || [],
+        }))
+      : legacyPackages;
+
   const extras = [
     { label: "Landing Page", price: "2,500 – 3,500 جنيه" },
     { label: "موقع شركة احترافي", price: "4,500 – 7,000 جنيه" },
@@ -1334,7 +1381,7 @@ function PricingSection({ setPage }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 22, marginBottom: 60 }}>
           {packages.map((pkg) => {
             const isActive = active === pkg.id;
-            const isFeatured = pkg.badge === "الأكثر طلباً";
+            const isFeatured = Boolean(pkg.badge);
             return (
               <div
                 key={pkg.id}

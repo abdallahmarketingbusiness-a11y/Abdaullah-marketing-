@@ -18,6 +18,7 @@ import ContentManager from "./ContentManager";
 import SubscriptionsManager from "./SubscriptionsManager";
 import ClientsManager from "./ClientsManager";
 import NotificationsManager from "./NotificationsManager";
+import BasicPackagesManager from "./BasicPackagesManager";
 import AiChatsManager from "./AiChatsManager";
 
 function QuickEditModal({ pkg, onClose, onSaved }) {
@@ -92,7 +93,8 @@ const TABS = [
   { id: "clients", label: "👥 إدارة العملاء" },
   { id: "ai-chats", label: "🤖 محادثات الذكاء الاصطناعي" },
   { id: "notifications", label: "🔔 الإشعارات" },
-  { id: "packages", label: "🛠️ الباقات" },
+  { id: "basicPackages", label: "📦 الباقات الأساسية" },
+  { id: "packages", label: "🛠️ الباقات المخصصة" },
   { id: "subscriptions", label: "💳 الاشتراكات" },
   { id: "analytics", label: "📈 تحليلات العملاء" },
   { id: "portal", label: "🗂️ بيانات لوحة العميل" },
@@ -209,6 +211,7 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
         {tab === "content" && <ContentManager />}
         {tab === "testimonials" && <TestimonialsManager />}
         {tab === "about" && <AboutManager />}
+        {tab === "basicPackages" && <BasicPackagesManager />}
 
         {tab === "packages" && (loading ? (
           <p style={{ color: "#888" }}>جاري التحميل...</p>
