@@ -28,6 +28,7 @@ import {
 } from "../services/clientPortalService";
 import { NOTIF_ICONS } from "../lib/notificationIcons";
 import { PostsFeedSection, PostsGridPage, PostDetailPage } from "../components/PostsHub";
+import MarketingChatWidget from "../components/MarketingChatWidget";
 
 // تحميل كسول (code-splitting) لصفحات الأدمن ولوحة العميل وتسجيل الدخول/الاشتراك.
 // الصفحات دي كلها موجودة خلف رابط hash مخصص (#admin, #dashboard, #login...)
@@ -2539,6 +2540,9 @@ export default function App() {
         .animate-spin-slow { animation: spin-slow 20s linear infinite; }
       `}</style>
       <WAButton />
+      {!["admin", "login", "signup", "forgot-password", "reset-password", "dashboard"].includes(page) && (
+        <MarketingChatWidget />
+      )}
       {!["admin", "login", "signup", "forgot-password", "reset-password"].includes(page) && <AnnouncementBar />}
       <Navbar
         page={page}
