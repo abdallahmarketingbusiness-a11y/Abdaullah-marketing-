@@ -126,10 +126,9 @@ export default function MarketingChatWidget() {
           border: "none",
           cursor: "pointer",
           fontSize: 26,
-          overflow: "hidden",
         }}
       >
-        {open ? "✕" : <img src="/images/icons/icon-ai.png" alt="مساعد ذكي" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+        {open ? "✕" : "🤖"}
         {hasUnread && !open && (
           <span
             style={{
@@ -188,10 +187,9 @@ export default function MarketingChatWidget() {
                 justifyContent: "center",
                 fontSize: 18,
                 flexShrink: 0,
-                overflow: "hidden",
               }}
             >
-              <img src="/images/icons/icon-ai.png" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              🤖
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#060606", fontWeight: 800, fontSize: 14 }}>
