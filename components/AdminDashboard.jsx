@@ -159,9 +159,18 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
     <div dir="rtl" style={{ background: BG, minHeight: "100vh", paddingTop: 110, paddingBottom: 60 }}>
       <div className="max-w-6xl mx-auto px-4">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-          <h1 style={{ fontFamily: FONT, fontSize: "clamp(22px,3.5vw,32px)", fontWeight: 900, color: "#fff" }}>
-            🛠️ لوحة السوبر أدمن
-          </h1>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h1 style={{ fontFamily: FONT, fontSize: "clamp(22px,3.5vw,32px)", fontWeight: 900, color: "#fff", margin: 0 }}>
+                🛠️ لوحة إدارة العملاء
+              </h1>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: "#7CE38B", background: "rgba(60,200,120,0.1)", border: "1px solid rgba(60,200,120,0.3)", borderRadius: 999, padding: "4px 10px" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3CC878", display: "inline-block" }} />
+                النظام متصل
+              </span>
+            </div>
+            <p style={{ color: "#888", fontSize: 12.5, margin: "6px 0 0" }}>نظام إدارة العملاء والحملات — Abdullah Marketing</p>
+          </div>
           <button
             onClick={onLogout}
             style={{ padding: "10px 18px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "none", color: "#aaa", fontSize: 13, cursor: "pointer" }}

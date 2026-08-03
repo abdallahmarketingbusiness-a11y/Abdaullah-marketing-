@@ -196,11 +196,19 @@ export default function ClientDashboard({ onLogout, notifications, onNotificatio
               {getInitials(profile?.full_name)}
             </div>
             <div>
-              <h1 style={{ fontSize: 21, fontWeight: 900, color: "#fff", margin: 0 }}>
-                {loading ? "جاري التحميل..." : `أهلاً، ${displayName}`}
-              </h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h1 style={{ fontSize: 21, fontWeight: 900, color: "#fff", margin: 0 }}>
+                  {loading ? "جاري التحميل..." : `أهلاً، ${displayName}`}
+                </h1>
+                {!loading && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10.5, fontWeight: 800, color: GOLD3, background: "rgba(201,150,58,0.1)", border: "1px solid rgba(201,150,58,0.3)", borderRadius: 999, padding: "3px 10px" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3CC878", display: "inline-block" }} />
+                    حساب نشط
+                  </span>
+                )}
+              </div>
               <p style={{ color: "#888", fontSize: 12.5, margin: "4px 0 0" }}>
-                {profile?.business_name ? profile.business_name : "لوحة تحكم العميل"}
+                {profile?.business_name ? profile.business_name : "لوحة تحكم العميل"} · فريق Abdullah Marketing تحت تصرفك
               </p>
             </div>
           </div>

@@ -2342,6 +2342,20 @@ function Footer({ setPage }) {
         </div>
       </div>
       <div className="divider-gradient my-6" />
+      <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 mb-6 text-xs" style={{ color: "var(--text-muted)" }}>
+        {[
+          { icon: "🔒", label: "بيانات وعقود آمنة" },
+          { icon: "⚡", label: "رد خلال 24 ساعة" },
+          { icon: "🤝", label: "مدير حساب مخصص لكل عميل" },
+          { icon: "📊", label: "تقارير أداء دورية موثقة" },
+        ].map((b, i) => (
+          <span key={i} className="inline-flex items-center gap-1.5 font-semibold">
+            <span>{b.icon}</span>
+            <span>{b.label}</span>
+          </span>
+        ))}
+      </div>
+      <div className="divider-gradient mb-6" />
       <div className="flex items-center justify-between flex-wrap gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
         <span>© {new Date().getFullYear()} Abdullah Marketing. جميع الحقوق محفوظة.</span>
         <span>صُنع بشغف لعلامتك التجارية ✦</span>
