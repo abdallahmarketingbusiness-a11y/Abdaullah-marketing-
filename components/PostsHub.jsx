@@ -235,18 +235,10 @@ const shareItemStyle = {
 function InstagramFeedCard({ post, onOpen, delay, liked, likeCount, commentCount, onToggleLike }) {
   return (
     <Reveal delay={delay}>
-      <div className="rounded-2xl overflow-hidden" style={{ background: "#0b0b0b", border: "1px solid rgba(201,150,58,0.16)" }}>
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg,${GOLD},${GOLD3})`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#000", fontSize: 14, flexShrink: 0 }}>A</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold" style={{ color: "#fff" }}>Abdullah Marketing</p>
-            <p className="text-[11px]" style={{ color: "#888" }}>{postCategoryEmoji(post.category)} {postCategoryLabel(post.category)} · {formatDate(post.created_at)}</p>
-          </div>
-        </div>
-
-        <button onClick={() => onOpen(post.id)} className="relative w-full block" style={{ aspectRatio: "4/5", cursor: "pointer" }}>
+      <div className="card-pro rounded-2xl overflow-hidden">
+        <button onClick={() => onOpen(post.id)} className="relative w-full block" style={{ aspectRatio: "1/1", cursor: "pointer", background: "#000" }}>
           {post.cover_image_url ? (
-            <Image src={post.cover_image_url} alt={post.title} fill sizes="(max-width: 640px) 100vw, 600px" className="object-cover" />
+            <Image src={post.cover_image_url} alt={post.title} fill sizes="(max-width: 640px) 100vw, 600px" className="object-contain" />
           ) : (
             <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.16), rgba(201,150,58,0.03))" }}>
               <span className="text-4xl opacity-40">✦</span>
@@ -261,20 +253,21 @@ function InstagramFeedCard({ post, onOpen, delay, liked, likeCount, commentCount
         </div>
 
         <div className="px-4 pt-0.5">
-          <p className="text-xs font-bold" style={{ color: "#fff" }}>
+          <p className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
             {likeCount > 0 ? `${likeCount} ${likeCount === 1 ? "لايك" : "لايكات"}` : "كن أول من يعمل لايك"}
           </p>
         </div>
 
-        <div className="px-4 pt-1.5">
-          <p className="text-sm leading-relaxed">
-            <span className="font-bold" style={{ color: "#fff" }}>Abdullah Marketing</span>{" "}
-            <span className="font-black" style={{ color: GOLD3 }}>{post.title}</span>
-          </p>
-          {post.excerpt && <p className="text-sm mt-0.5 line-clamp-2" style={{ color: "#aaa" }}>{post.excerpt}</p>}
+        <div className="px-4 pt-2.5">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <CategoryBadge category={post.category} />
+            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{formatDate(post.created_at)}</span>
+          </div>
+          <h3 className="text-base font-black mb-1" style={{ color: "var(--text-primary)" }}>{post.title}</h3>
+          {post.excerpt && <p className="text-sm leading-relaxed line-clamp-2" style={{ color: "var(--text-secondary)" }}>{post.excerpt}</p>}
         </div>
 
-        <button onClick={() => onOpen(post.id)} className="px-4 py-2.5 block text-xs w-full text-right" style={{ color: "#888", cursor: "pointer" }}>
+        <button onClick={() => onOpen(post.id)} className="px-4 py-3 block text-xs w-full text-right" style={{ color: "var(--text-muted)", cursor: "pointer" }}>
           {commentCount > 0 ? `عرض كل التعليقات (${commentCount})` : "أضف تعليق..."}
         </button>
       </div>
@@ -289,9 +282,9 @@ function InstagramGridCard({ post, onOpen, delay, likeCount, commentCount }) {
   return (
     <Reveal delay={delay}>
       <button onClick={() => onOpen(post.id)} className="w-full text-right group block" style={{ cursor: "pointer" }}>
-        <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "1/1", border: "1px solid rgba(201,150,58,0.16)" }}>
+        <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "1/1", border: "1px solid rgba(201,150,58,0.16)", background: "#000" }}>
           {post.cover_image_url ? (
-            <Image src={post.cover_image_url} alt={post.title} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-105" />
+            <Image src={post.cover_image_url} alt={post.title} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-contain transition-transform duration-300 group-hover:scale-105" />
           ) : (
             <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.16), rgba(201,150,58,0.03))" }}>
               <span className="text-3xl opacity-40">✦</span>
@@ -614,8 +607,8 @@ function SinglePostView({ post, onBack, active }) {
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", position: "relative", zIndex: 1 }}>
         {post.cover_image_url && (
-          <div className="relative w-full" style={{ aspectRatio: "4/5", maxHeight: "55vh" }}>
-            <Image src={post.cover_image_url} alt={post.title} fill sizes="100vw" className="object-cover" priority={active} />
+          <div className="relative w-full" style={{ aspectRatio: "1/1", maxHeight: "60vh", background: "#000" }}>
+            <Image src={post.cover_image_url} alt={post.title} fill sizes="100vw" className="object-contain" priority={active} />
           </div>
         )}
 
