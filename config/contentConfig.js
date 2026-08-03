@@ -6,6 +6,7 @@ export const CASE_STUDIES_TABLE = "case_studies";
 export const BLOG_POSTS_TABLE = "blog_posts";
 export const SOCIAL_POSTS_TABLE = "social_posts";
 export const SITE_POSTS_TABLE = "site_posts";
+export const SITE_SERVICES_TABLE = "site_services";
 
 export const CONTENT_STATUS = {
   PUBLISHED: "published",

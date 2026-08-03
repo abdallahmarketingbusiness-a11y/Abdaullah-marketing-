@@ -122,7 +122,7 @@ function WAButton() {
   );
 }
 
-const services = [
+const legacyServices = [
   { icon: "🍽️", name: "تسويق المطاعم", desc: "استراتيجيات مخصصة للمطاعم والكافيهات — من التصوير الاحترافي للأكل حتى إدارة الحملات وزيادة الحجوزات.", tag: "RESTAURANT MARKETING" },
   { icon: "👗", name: "تسويق الأزياء والفاشن", desc: "هوية بصرية راقية لعلامات الأزياء وإدارتها على السوشيال ميديا بأسلوب يعكس الفخامة والتميز.", tag: "FASHION MARKETING" },
   { icon: "🎨", name: "تصميم المحتوى", desc: "تصاميم جرافيك احترافية لجميع المنصات — بوسترات، كروسيلات، ستوري، وهوية بصرية متكاملة.", tag: "DESIGNS" },
@@ -310,6 +310,21 @@ function HeroPage({ setPage }) {
 }
 
 function ServicesSection({ setPage }) {
+  const [dbServices, setDbServices] = useState(null);
+
+  // خدمات قابلة للإضافة والتعديل من السوبر أدمن (تبويب "المحتوى" → "🛠️ خدماتي")
+  // — لو مفيش خدمات لسه مضافة من الأدمن، بتظهر القائمة الأساسية القديمة
+  // كـ"احتياطي" عشان القسم ما يفضلش فاضي.
+  useEffect(() => {
+    let alive = true;
+    fetchPublished("services")
+      .then((data) => { if (alive) setDbServices(data); })
+      .catch(() => { if (alive) setDbServices([]); });
+    return () => { alive = false; };
+  }, []);
+
+  const visibleServices = dbServices === null ? [] : dbServices.length > 0 ? dbServices : legacyServices;
+
   return (
     <section id="services" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
@@ -318,13 +333,13 @@ function ServicesSection({ setPage }) {
         <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">حلول متكاملة تحوّل علامتك التجارية إلى قوة رقمية لا تُنافَس</p>
       </Reveal>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
-        {services.map((s, i) => (
-          <Reveal key={i} delay={i * 45}>
+        {visibleServices.map((s, i) => (
+          <Reveal key={s.id || i} delay={i * 45}>
             <div className="card-pro p-8 relative overflow-hidden group cursor-default">
               <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-5 transition duration-300 group-hover:scale-110" style={{ background: "rgba(201,150,58,0.08)", border: "1px solid rgba(201,150,58,0.2)" }}>{s.icon}</div>
               <h3 className="text-base font-bold mb-2" style={{ color: "var(--text-primary)" }}>{s.name}</h3>
-              <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{s.desc}</p>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{s.desc || s.description}</p>
               <span className="badge-gold inline-flex mt-4">{s.tag}</span>
             </div>
           </Reveal>

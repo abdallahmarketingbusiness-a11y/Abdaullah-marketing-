@@ -8,6 +8,7 @@ import {
   BLOG_POSTS_TABLE,
   SOCIAL_POSTS_TABLE,
   SITE_POSTS_TABLE,
+  SITE_SERVICES_TABLE,
   CONTENT_STATUS,
   STORAGE_BUCKET_CONTENT,
 } from "../config/contentConfig";
@@ -18,6 +19,7 @@ const TABLES = {
   blogPosts: BLOG_POSTS_TABLE,
   socialPosts: SOCIAL_POSTS_TABLE,
   sitePosts: SITE_POSTS_TABLE,
+  services: SITE_SERVICES_TABLE,
 };
 
 function tableOf(entity) {
@@ -31,10 +33,13 @@ export async function fetchPublished(entity, { limit } = {}) {
     .from(tableOf(entity))
     .select("*")
     .eq("status", CONTENT_STATUS.PUBLISHED);
-  if (entity === "sitePosts") query = query.order("is_pinned", { ascending: false });
-  query = query
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+  if (entity === "sitePosts") {
+    // منشورات الموقع: الأحدث دايمًا في الأول (بعد المثبّت لو موجود)،
+    // من غير الاعتماد على sort_order اليدوي القديم.
+    query = query.order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
+  } else {
+    query = query.order("sort_order", { ascending: true }).order("created_at", { ascending: false });
+  }
   if (limit) query = query.limit(limit);
   const { data, error } = await query;
   if (error) throw error;

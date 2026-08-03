@@ -115,6 +115,19 @@ const ENTITY_CONFIG = {
       { key: "scheduled_at", label: "⏰ جدولة النشر (اختياري)", type: "datetime" },
     ],
   },
+  services: {
+    label: "خدماتي",
+    titleField: "name",
+    titlePlaceholder: "اسم الخدمة",
+    newLabel: "➕ خدمة جديدة",
+    emptyLabel: "لا توجد خدمات حتى الآن.",
+    fields: [
+      { key: "icon", label: "الإيموجي (يظهر في الكارت)", type: "text" },
+      { key: "name", label: "اسم الخدمة", type: "text" },
+      { key: "description", label: "الوصف", type: "textarea" },
+      { key: "tag", label: "تاج إنجليزي صغير (مثال: RESTAURANT MARKETING)", type: "text" },
+    ],
+  },
 };
 
 function emptyForm(entity) {
@@ -196,7 +209,7 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
           notifDate: new Date().toISOString().slice(0, 10),
           linkType: "sitePost",
           linkId: saved.id,
-        }).catch(() => {}); // فشل الإشعار مايوقفش حفظ المنشور
+        }).catch((err) => console.error("فشل إرسال إشعار النشر (تأكد إنك نفّذت sql/patch_notifications_link.sql):", err)); // فشل الإشعار مايوقفش حفظ المنشور
       }
 
       flash(isEdit ? "✅ تم حفظ التعديلات" : "✅ تم الإضافة");
@@ -333,7 +346,7 @@ function EntitySection({ entity }) {
         notifDate: new Date().toISOString().slice(0, 10),
         linkType: "sitePost",
         linkId: updated.id,
-      }).catch(() => {});
+      }).catch((err) => console.error("فشل إرسال إشعار النشر (تأكد إنك نفّذت sql/patch_notifications_link.sql):", err));
     }
   }
 
@@ -402,6 +415,9 @@ function EntitySection({ entity }) {
                   )}
                   {entity === "blogPosts" && <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.category}</p>}
                   {entity === "caseStudies" && <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.industry}</p>}
+                  {entity === "services" && (
+                    <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.icon} {item.tag}</p>
+                  )}
                 </div>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
@@ -431,6 +447,7 @@ function EntitySection({ entity }) {
 
 const SUB_TABS = [
   { id: "sitePosts", label: "📰 منشورات الموقع" },
+  { id: "services", label: "🛠️ خدماتي" },
   { id: "caseStudies", label: "📊 دراسات الحالة" },
   { id: "socialPosts", label: "🖼️ نماذج أعمال سوشيال ميديا" },
   { id: "blogPosts", label: "📝 المدونة" },
