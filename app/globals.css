@@ -18,12 +18,12 @@
   --border: #2E2A22;
   --border-soft: rgba(201,150,58,0.16);
 
-  /* Ambient glow layer — soft gold light sources, not a flat black page */
+  /* Site-wide background photo — dark stage with gold light beams.
+     A soft dark scrim sits on top so text stays readable, then the photo
+     itself supplies the gold glow (no separate fake-glow layer needed). */
   --glow-bg:
-    radial-gradient(1100px 700px at 12% -8%, rgba(201,150,58,0.16), transparent 60%),
-    radial-gradient(900px 600px at 108% 8%, rgba(245,215,142,0.10), transparent 55%),
-    radial-gradient(1000px 800px at 50% 115%, rgba(201,150,58,0.09), transparent 60%),
-    linear-gradient(180deg, #0D0B08 0%, #0B0A08 45%, #0E0C09 100%);
+    linear-gradient(180deg, rgba(11,10,8,0.30) 0%, rgba(11,10,8,0.55) 45%, rgba(11,10,8,0.88) 100%),
+    url('/images/site-bg.jpg');
 
   --text-primary: #F2F2F2;
   --text-secondary: #A8A8A8;
@@ -67,16 +67,29 @@ html {
 
 body {
   font-family: var(--font-cairo), sans-serif;
-  background: var(--glow-bg);
+  background-image: var(--glow-bg);
   background-color: var(--bg);
+  background-size: cover;
+  background-position: center 15%;
+  background-repeat: no-repeat;
   background-attachment: fixed;
   color: var(--text-primary);
   overflow-x: hidden;
   transition: background-color 0.35s var(--ease-out), color 0.35s var(--ease-out);
 }
 
+/* Progressive enhancement: serve the lighter/higher-quality WebP where supported */
+@supports (background-image: image-set(url('/images/site-bg.webp') type('image/webp') 1x)) {
+  body {
+    background-image:
+      linear-gradient(180deg, rgba(11,10,8,0.30) 0%, rgba(11,10,8,0.55) 45%, rgba(11,10,8,0.88) 100%),
+      image-set(url('/images/site-bg.webp') type('image/webp') 1x, url('/images/site-bg.jpg') type('image/jpeg') 1x);
+  }
+}
+
 /* Light mode: no dark glow layer, just the clean light surface */
 html.light body {
+  background-image: none;
   background: var(--bg);
 }
 
