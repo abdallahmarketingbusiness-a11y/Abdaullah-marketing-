@@ -111,14 +111,14 @@ function WAButton() {
       style={{
         position: "fixed", bottom: 24, left: 24, zIndex: 9999,
         width: 58, height: 58, borderRadius: "50%",
-        background: "linear-gradient(135deg,#25D366,#128C7E)",
-        boxShadow: "0 4px 24px rgba(37,211,102,0.45)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 28, textDecoration: "none",
+        textDecoration: "none", overflow: "hidden",
+        background: "radial-gradient(circle at 35% 30%, #201b12, #0c0a07)",
+        boxShadow: "0 4px 24px rgba(201,150,58,0.45)",
         animation: "waPulse 2.5s ease-in-out infinite",
       }}
     >
-      💬
+      <img src="/images/icons/icon-whatsapp.png" alt="واتساب" style={{ width: "78%", height: "78%", objectFit: "contain" }} />
     </a>
   );
 }
@@ -1312,7 +1312,7 @@ function PricingSection({ setPage }) {
   ];
 
   return (
-    <section id="pricing" dir="rtl" style={{ background: "linear-gradient(180deg,#060606 0%,#0a0802 50%,#060606 100%)", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
+    <section id="pricing" dir="rtl" style={{ background: "transparent", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
       {/* Background glow orbs */}
       <div style={{ position: "absolute", top: "10%", left: "5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(201,150,58,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: "10%", right: "5%", width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(110,231,247,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
@@ -2148,9 +2148,9 @@ function NotificationBell({ notifications, unreadCount, onItemClick, onMarkAllRe
         onClick={() => setOpen((v) => !v)}
         aria-label="الإشعارات"
         className={`relative flex items-center justify-center rounded-xl transition-colors ${compact ? "w-9 h-9 text-base" : "w-10 h-10 text-lg"}`}
-        style={{ color: GOLD, background: "rgba(201,150,58,0.08)", border: "1px solid rgba(201,150,58,0.18)" }}
+        style={{ color: GOLD, background: "transparent", border: "none", overflow: "visible" }}
       >
-        🔔
+        <img src="/images/icons/icon-bell.png" alt="الإشعارات" style={{ width: "82%", height: "82%", objectFit: "contain" }} />
         {unreadCount > 0 && (
           <span
             className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[10px] font-black text-white"
@@ -2168,7 +2168,10 @@ function NotificationBell({ notifications, unreadCount, onItemClick, onMarkAllRe
           style={{ border: "1px solid var(--border-soft)", boxShadow: "0 18px 50px rgba(0,0,0,0.35)", zIndex: 60 }}
         >
           <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-soft)" }}>
-            <span className="text-sm font-black" style={{ color: "var(--text-primary)" }}>🔔 الإشعارات</span>
+            <span className="text-sm font-black flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
+              <img src="/images/icons/icon-bell.png" alt="" style={{ width: 18, height: 18, objectFit: "contain" }} />
+              الإشعارات
+            </span>
             {hasUnread && (
               <button onClick={onMarkAllRead} className="text-[11px] font-bold" style={{ color: GOLD }}>
                 تعليم الكل كمقروء
@@ -2298,14 +2301,13 @@ function Navbar({ page, setPage, clientSession, notifications, unreadCount, onNo
             onClick={() => { setMenuOpen(false); setPage(clientSession ? "dashboard" : "login"); }}
             aria-label={clientSession ? "حسابي" : "تسجيل الدخول"}
             className="w-9 h-9 flex items-center justify-center rounded-full transition-colors"
-            style={{ color: GOLD, background: "rgba(201,150,58,0.08)", border: "none" }}
+            style={{ color: GOLD, background: "transparent", border: "none" }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
-              <path d="M4 20c0-3.5 3.5-6 8-6s8 2.5 8 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <img src="/images/icons/icon-account.png" alt="" style={{ width: "82%", height: "82%", objectFit: "contain" }} />
           </button>
-          <button className="text-xl leading-none w-9 h-9 flex items-center justify-center rounded-full transition-colors" style={{ color: GOLD, background: "rgba(201,150,58,0.08)", border: "none" }} onClick={() => setMenuOpen(m => !m)}>{menuOpen ? "✕" : "☰"}</button>
+          <button className="text-xl leading-none w-9 h-9 flex items-center justify-center rounded-full transition-colors" style={{ color: GOLD, background: "transparent", border: "none" }} onClick={() => setMenuOpen(m => !m)}>
+            {menuOpen ? "✕" : <img src="/images/icons/icon-menu.png" alt="" style={{ width: "82%", height: "82%", objectFit: "contain" }} />}
+          </button>
         </div>
       </nav>
       {menuOpen && (
@@ -2541,7 +2543,7 @@ export default function App() {
       `}</style>
       <WAButton />
       {!["admin", "login", "signup", "forgot-password", "reset-password", "dashboard"].includes(page) && (
-        <MarketingChatWidget clientSession={clientSession} setPage={setPage} />
+        <MarketingChatWidget />
       )}
       {!["admin", "login", "signup", "forgot-password", "reset-password"].includes(page) && <AnnouncementBar />}
       <Navbar

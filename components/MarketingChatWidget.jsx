@@ -9,10 +9,7 @@ const GOLD3 = "#F5D78E";
 const WELCOME_MESSAGE =
   "أهلاً بيك 👋 أنا مساعد عبدالله ماركتنج الذكي — خبير في التسويق الرقمي والسوشيال ميديا.\nاسألني عن أي حاجة: إعلانات ممولة، محتوى وريلز، تسويق مطاعم، استراتيجية براند... أي سؤال تسويقي هساعدك فيه بجدية 🔥";
 
-// clientSession: جلسة Supabase بتاعة العميل (زي ما بترجع من signInClient/
-// signUpClient) أو null لو مسجّلش دخول. لازم العميل يكون مسجّل دخول عشان
-// يستخدم الشات، لأن كل محادثة بتتحفظ مربوطة بحسابه في لوحة الأدمن.
-export default function MarketingChatWidget({ clientSession, setPage }) {
+export default function MarketingChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: "assistant", content: WELCOME_MESSAGE },
@@ -21,10 +18,8 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasUnread, setHasUnread] = useState(false);
-  const [conversationId, setConversationId] = useState(null);
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
-  const isLoggedIn = !!clientSession?.access_token;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -46,7 +41,6 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
   async function sendMessage() {
     const text = input.trim();
     if (!text || loading) return;
-    if (!isLoggedIn) return; // شبكة أمان إضافية، الزرار أصلاً بيتعطل من غير تسجيل دخول
 
     const nextMessages = [...messages, { role: "user", content: text }];
     setMessages(nextMessages);
@@ -61,11 +55,8 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${clientSession.access_token}`,
-        },
-        body: JSON.stringify({ messages: nextMessages, conversationId }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: nextMessages }),
       });
 
       if (!res.ok || !res.body) {
@@ -76,9 +67,6 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
         } catch {}
         throw new Error(msg);
       }
-
-      const returnedConversationId = res.headers.get("X-Conversation-Id");
-      if (returnedConversationId) setConversationId(returnedConversationId);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -130,7 +118,7 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
           width: 60,
           height: 60,
           borderRadius: "50%",
-          background: `linear-gradient(135deg, ${GOLD3}, ${GOLD})`,
+          background: "radial-gradient(circle at 35% 30%, #201b12, #0c0a07)",
           boxShadow: "0 4px 24px rgba(201,150,58,0.45)",
           display: "flex",
           alignItems: "center",
@@ -138,9 +126,10 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
           border: "none",
           cursor: "pointer",
           fontSize: 26,
+          overflow: "hidden",
         }}
       >
-        {open ? "✕" : "🤖"}
+        {open ? "✕" : <img src="/images/icons/icon-ai.png" alt="مساعد ذكي" style={{ width: "78%", height: "78%", objectFit: "contain" }} />}
         {hasUnread && !open && (
           <span
             style={{
@@ -199,9 +188,10 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
                 justifyContent: "center",
                 fontSize: 18,
                 flexShrink: 0,
+                overflow: "hidden",
               }}
             >
-              🤖
+              <img src="/images/icons/icon-ai.png" alt="" style={{ width: "76%", height: "76%", objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#060606", fontWeight: 800, fontSize: 14 }}>
@@ -292,65 +282,7 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
             )}
           </div>
 
-          {/* صندوق الكتابة — أو دعوة لتسجيل الدخول لو مفيش حساب */}
-          {!isLoggedIn ? (
-            <div
-              style={{
-                borderTop: "1px solid #1e1e1e",
-                padding: "16px 14px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 10,
-                background: "#0a0a0a",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ color: "#ccc", fontSize: 12.5, lineHeight: 1.7 }}>
-                لازم يكون عندك حساب عشان تستخدم المساعد الذكي 🔒
-              </div>
-              <div style={{ display: "flex", gap: 8, width: "100%" }}>
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    setPage?.("login");
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "10px 0",
-                    borderRadius: 10,
-                    border: `1px solid ${GOLD}66`,
-                    background: "transparent",
-                    color: GOLD2,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  تسجيل الدخول
-                </button>
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    setPage?.("signup");
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "10px 0",
-                    borderRadius: 10,
-                    border: "none",
-                    background: `linear-gradient(135deg, ${GOLD3}, ${GOLD})`,
-                    color: "#060606",
-                    fontSize: 13,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                  }}
-                >
-                  إنشاء حساب
-                </button>
-              </div>
-            </div>
-          ) : (
+          {/* صندوق الكتابة */}
           <div
             style={{
               borderTop: "1px solid #1e1e1e",
@@ -410,7 +342,6 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
               ➤
             </button>
           </div>
-          )}
         </div>
       )}
     </>
