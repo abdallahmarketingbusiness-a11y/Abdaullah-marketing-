@@ -9,7 +9,10 @@ const GOLD3 = "#F5D78E";
 const WELCOME_MESSAGE =
   "أهلاً بيك 👋 أنا مساعد عبدالله ماركتنج الذكي — خبير في التسويق الرقمي والسوشيال ميديا.\nاسألني عن أي حاجة: إعلانات ممولة، محتوى وريلز، تسويق مطاعم، استراتيجية براند... أي سؤال تسويقي هساعدك فيه بجدية 🔥";
 
-export default function MarketingChatWidget() {
+// clientSession: جلسة Supabase بتاعة العميل (زي ما بترجع من signInClient/
+// signUpClient) أو null لو مسجّلش دخول. لازم العميل يكون مسجّل دخول عشان
+// يستخدم الشات، لأن كل محادثة بتتحفظ مربوطة بحسابه في لوحة الأدمن.
+export default function MarketingChatWidget({ clientSession, setPage }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: "assistant", content: WELCOME_MESSAGE },
@@ -18,8 +21,10 @@ export default function MarketingChatWidget() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasUnread, setHasUnread] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
+  const isLoggedIn = !!clientSession?.access_token;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -35,12 +40,13 @@ export default function MarketingChatWidget() {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+    el.style.height = Math.min(el.scrollHeight, 160) + "px";
   };
 
   async function sendMessage() {
     const text = input.trim();
     if (!text || loading) return;
+    if (!isLoggedIn) return; // شبكة أمان إضافية، الزرار أصلاً بيتعطل من غير تسجيل دخول
 
     const nextMessages = [...messages, { role: "user", content: text }];
     setMessages(nextMessages);
@@ -52,11 +58,26 @@ export default function MarketingChatWidget() {
     // مكان مؤقت لرد المساعد هنعبّيه تدريجيًا مع الـ streaming
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
+    // حماية من التعليق: لو مفيش أي بيانات جديدة جاية من السيرفر لمدة طويلة
+    // (شبكة واقعة، أو الاتصال اتقطع من غير ما الـ stream يقفل بشكل نظيف)،
+    // بنوقف الطلب تلقائيًا بدل ما يفضل معلّق للأبد وناخد رسالة واضحة للعميل.
+    const controller = new AbortController();
+    let watchdog;
+    const resetWatchdog = () => {
+      clearTimeout(watchdog);
+      watchdog = setTimeout(() => controller.abort(), 45000);
+    };
+    resetWatchdog();
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${clientSession.access_token}`,
+        },
+        body: JSON.stringify({ messages: nextMessages, conversationId }),
+        signal: controller.signal,
       });
 
       if (!res.ok || !res.body) {
@@ -68,6 +89,9 @@ export default function MarketingChatWidget() {
         throw new Error(msg);
       }
 
+      const returnedConversationId = res.headers.get("X-Conversation-Id");
+      if (returnedConversationId) setConversationId(returnedConversationId);
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let acc = "";
@@ -75,6 +99,7 @@ export default function MarketingChatWidget() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        resetWatchdog(); // وصلت بيانات جديدة → الاتصال لسه شغال، أرجّع العدّاد
         acc += decoder.decode(value, { stream: true });
         const snapshot = acc;
         setMessages((prev) => {
@@ -89,9 +114,24 @@ export default function MarketingChatWidget() {
 
       if (!open) setHasUnread(true);
     } catch (err) {
-      setMessages((prev) => prev.slice(0, -1)); // شيل فقاعة الرد الفاضية
-      setError(err?.message || "حصل خطأ غير متوقع، جرب تاني.");
+      const wasAborted = err?.name === "AbortError";
+      setMessages((prev) => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        // لو اتقطع الاتصال بعد ما وصل جزء من الرد، سيبنا الجزء ده ظاهر
+        // (أحسن من مسحه بالكامل) وضيفنا تنبيه، بدل ما نمسح كل حاجة.
+        if (last?.role === "assistant" && last.content?.trim()) {
+          return updated;
+        }
+        return updated.slice(0, -1); // شيل فقاعة الرد الفاضية
+      });
+      setError(
+        wasAborted
+          ? "الاتصال بالمساعد الذكي طوّل أكتر من اللازم، جرب تبعت السؤال تاني."
+          : err?.message || "حصل خطأ غير متوقع، جرب تاني."
+      );
     } finally {
+      clearTimeout(watchdog);
       setLoading(false);
     }
   }
@@ -118,7 +158,7 @@ export default function MarketingChatWidget() {
           width: 60,
           height: 60,
           borderRadius: "50%",
-          background: "radial-gradient(circle at 35% 30%, #201b12, #0c0a07)",
+          background: `linear-gradient(135deg, ${GOLD3}, ${GOLD})`,
           boxShadow: "0 4px 24px rgba(201,150,58,0.45)",
           display: "flex",
           alignItems: "center",
@@ -126,10 +166,9 @@ export default function MarketingChatWidget() {
           border: "none",
           cursor: "pointer",
           fontSize: 26,
-          overflow: "hidden",
         }}
       >
-        {open ? "✕" : <img src="/images/icons/icon-ai.png" alt="مساعد ذكي" style={{ width: "78%", height: "78%", objectFit: "contain" }} />}
+        {open ? "✕" : "🤖"}
         {hasUnread && !open && (
           <span
             style={{
@@ -188,10 +227,9 @@ export default function MarketingChatWidget() {
                 justifyContent: "center",
                 fontSize: 18,
                 flexShrink: 0,
-                overflow: "hidden",
               }}
             >
-              <img src="/images/icons/icon-ai.png" alt="" style={{ width: "76%", height: "76%", objectFit: "contain" }} />
+              🤖
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#060606", fontWeight: 800, fontSize: 14 }}>
@@ -282,7 +320,65 @@ export default function MarketingChatWidget() {
             )}
           </div>
 
-          {/* صندوق الكتابة */}
+          {/* صندوق الكتابة — أو دعوة لتسجيل الدخول لو مفيش حساب */}
+          {!isLoggedIn ? (
+            <div
+              style={{
+                borderTop: "1px solid #1e1e1e",
+                padding: "16px 14px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+                background: "#0a0a0a",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ color: "#ccc", fontSize: 12.5, lineHeight: 1.7 }}>
+                لازم يكون عندك حساب عشان تستخدم المساعد الذكي 🔒
+              </div>
+              <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setPage?.("login");
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    borderRadius: 10,
+                    border: `1px solid ${GOLD}66`,
+                    background: "transparent",
+                    color: GOLD2,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  تسجيل الدخول
+                </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setPage?.("signup");
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    borderRadius: 10,
+                    border: "none",
+                    background: `linear-gradient(135deg, ${GOLD3}, ${GOLD})`,
+                    color: "#060606",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  إنشاء حساب
+                </button>
+              </div>
+            </div>
+          ) : (
           <div
             style={{
               borderTop: "1px solid #1e1e1e",
@@ -314,7 +410,7 @@ export default function MarketingChatWidget() {
                 fontSize: 13.5,
                 fontFamily: "inherit",
                 outline: "none",
-                maxHeight: 120,
+                maxHeight: 160,
               }}
             />
             <button
@@ -342,6 +438,7 @@ export default function MarketingChatWidget() {
               ➤
             </button>
           </div>
+          )}
         </div>
       )}
     </>
