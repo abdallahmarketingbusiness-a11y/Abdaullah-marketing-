@@ -90,6 +90,9 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
         try {
           const data = await res.json();
           if (data?.error) msg = data.error;
+          // تفصيلة السبب الحقيقي (status/رسالة Gemini) بتتطبع في الـ console
+          // بس عشان صاحب الموقع يقدر يشخّص المشكلة من غير ما تتعرض للعميل.
+          if (data?.debug) console.error("Chat debug:", data.debug);
         } catch {}
         throw new Error(msg);
       }
@@ -224,7 +227,7 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
           width: 60,
           height: 60,
           borderRadius: "50%",
-          background: `linear-gradient(135deg, ${GOLD3}, ${GOLD})`,
+          background: "radial-gradient(circle at 35% 30%, #201b12, #0c0a07)",
           boxShadow: "0 4px 24px rgba(201,150,58,0.45)",
           display: "flex",
           alignItems: "center",
@@ -232,9 +235,10 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
           border: "none",
           cursor: "pointer",
           fontSize: 26,
+          overflow: "hidden",
         }}
       >
-        {open ? "✕" : "🤖"}
+        {open ? "✕" : <img src="/images/icons/icon-ai.png" alt="مساعد ذكي" style={{ width: "78%", height: "78%", objectFit: "contain" }} />}
         {hasUnread && !open && (
           <span
             style={{
@@ -293,9 +297,10 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
                 justifyContent: "center",
                 fontSize: 18,
                 flexShrink: 0,
+                overflow: "hidden",
               }}
             >
-              🤖
+              <img src="/images/icons/icon-ai.png" alt="" style={{ width: "76%", height: "76%", objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#060606", fontWeight: 800, fontSize: 14 }}>

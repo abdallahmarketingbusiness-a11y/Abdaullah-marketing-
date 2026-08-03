@@ -427,8 +427,21 @@ export async function POST(req) {
     if (!upstream.ok || !upstream.body) {
       const errText = await upstream.text().catch(() => "");
       console.error("Gemini API error:", upstream.status, errText);
+      // بنحاول نطلع سبب حقيقي مختصر من رد جوجل (زي "API key not valid" أو
+      // "quota exceeded") بدل رسالة عامة ملهاش لازمة — من غير ما نسرّب أي جزء
+      // من المفتاح نفسه. لو مقدرناش نفهم شكل الرد، نرجع الرسالة العامة زي ما هي.
+      let detail = "";
+      try {
+        const parsed = JSON.parse(errText);
+        detail = parsed?.error?.message || "";
+      } catch {
+        detail = errText?.slice(0, 200) || "";
+      }
       return new Response(
-        JSON.stringify({ error: "حصل خطأ أثناء التواصل مع المساعد الذكي، جرب تاني كمان شوية." }),
+        JSON.stringify({
+          error: "حصل خطأ أثناء التواصل مع المساعد الذكي، جرب تاني كمان شوية.",
+          debug: `Gemini API responded with status ${upstream.status}${detail ? `: ${detail}` : ""}`,
+        }),
         { status: 502, headers: { "Content-Type": "application/json" } }
       );
     }
