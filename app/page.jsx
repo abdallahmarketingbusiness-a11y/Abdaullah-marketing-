@@ -17,6 +17,7 @@ import {
 } from "../services/portfolioService";
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
+import { fetchVisibleReviews } from "../services/reviewsService";
 import AnnouncementBar from "../components/AnnouncementBar";
 import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
 import { fetchPublished } from "../services/contentService";
@@ -1349,7 +1350,7 @@ function PricingSection({ setPage, content = {} }) {
   ];
 
   return (
-    <section id="pricing" dir="rtl" style={{ background: "linear-gradient(180deg,#060606 0%,#0a0802 50%,#060606 100%)", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
+    <section id="pricing" dir="rtl" style={{ background: "transparent", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
       {/* Background glow orbs */}
       <div style={{ position: "absolute", top: "10%", left: "5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(201,150,58,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: "10%", right: "5%", width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(110,231,247,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
@@ -2230,6 +2231,204 @@ function PromptsPage() {
   );
 }
 
+function ReviewStars({ rating, size = "text-sm" }) {
+  return (
+    <div className={`flex items-center gap-0.5 ${size}`} aria-label={`${rating} من 5 نجوم`} role="img">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <span key={i} style={{ color: i < rating ? GOLD : "var(--border)" }}>★</span>
+      ))}
+    </div>
+  );
+}
+
+function formatReviewDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function ReviewCard({ r, delay }) {
+  return (
+    <Reveal delay={delay}>
+      <div className="card-pro rounded-2xl p-6 h-full flex flex-col">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-black text-base" style={{ border: "1px solid var(--border-soft)", background: "rgba(201,150,58,0.1)", color: "var(--gold-light)" }}>
+            {r.avatar_url ? (
+              <Image src={r.avatar_url} alt={r.client_name} fill sizes="48px" className="object-cover" />
+            ) : (
+              (r.client_name || "?").trim().charAt(0)
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-black truncate" style={{ color: "var(--text-primary)" }}>{r.client_name}</h3>
+            {r.company_name && <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{r.company_name}</p>}
+          </div>
+          <span className="text-lg opacity-70 flex-shrink-0" aria-hidden="true">”</span>
+        </div>
+
+        <ReviewStars rating={r.rating} />
+
+        <p className="text-sm leading-relaxed mt-3 mb-4 flex-1" style={{ color: "var(--text-secondary)" }}>{r.comment}</p>
+
+        <span className="text-[11px] pt-3" style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border)" }}>{formatReviewDate(r.review_date)}</span>
+      </div>
+    </Reveal>
+  );
+}
+
+function ReviewsPage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [ratingFilter, setRatingFilter] = useState(0); // 0 = الكل
+
+  useEffect(() => {
+    let alive = true;
+    fetchVisibleReviews()
+      .then((data) => { if (alive) setItems(data); })
+      .catch(() => { if (alive) setItems([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  const avgRating = items.length ? items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length : 0;
+  const filtered = ratingFilter ? items.filter((r) => r.rating === ratingFilter) : items;
+
+  const distribution = [5, 4, 3, 2, 1].map((star) => ({
+    star,
+    count: items.filter((r) => r.rating === star).length,
+    pct: items.length ? Math.round((items.filter((r) => r.rating === star).length / items.length) * 100) : 0,
+  }));
+
+  return (
+    <div dir="rtl" className="min-h-screen px-6 py-28 relative">
+      <div className="max-w-5xl mx-auto">
+        <PageHeader label="CLIENT VOICE" title="تقييمات العملاء" desc="تجارب حقيقية من عملاء تعاملوا معانا — بنفتخر بيها وبنتعلم منها." />
+
+        {!loading && items.length > 0 && (
+          <Reveal className="glass-panel rounded-3xl p-6 md:p-10 mb-14 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            {/* ملخص التقييم — بنفس روح Google / Trustpilot */}
+            <div className="text-center md:text-right md:border-l md:pl-8" style={{ borderColor: "var(--border)" }}>
+              <div className="text-5xl md:text-6xl font-black mb-2" style={{ fontFamily: "var(--font-cinzel), serif", color: "var(--gold-light)" }}>
+                {avgRating.toFixed(1)}
+              </div>
+              <div className="flex justify-center md:justify-start mb-2">
+                <ReviewStars rating={Math.round(avgRating)} size="text-xl" />
+              </div>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>بناءً على {items.length} تقييم من عملائنا</p>
+            </div>
+
+            {/* توزيع النجوم */}
+            <div className="space-y-2">
+              {distribution.map((d) => (
+                <button
+                  key={d.star}
+                  onClick={() => setRatingFilter(ratingFilter === d.star ? 0 : d.star)}
+                  className="w-full flex items-center gap-3 group"
+                >
+                  <span className="text-xs w-10 flex-shrink-0 font-bold" style={{ color: ratingFilter === d.star ? "var(--gold-light)" : "var(--text-muted)" }}>{d.star} ★</span>
+                  <span className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+                    <span className="block h-full rounded-full transition-all duration-500" style={{ width: `${d.pct}%`, background: `linear-gradient(90deg, ${GOLD}, ${GOLD3})` }} />
+                  </span>
+                  <span className="text-[11px] w-8 text-left flex-shrink-0" style={{ color: "var(--text-muted)" }}>{d.count}</span>
+                </button>
+              ))}
+              {ratingFilter > 0 && (
+                <button onClick={() => setRatingFilter(0)} className="text-[11px] font-bold mt-1" style={{ color: GOLD }}>
+                  ✕ مسح الفلتر
+                </button>
+              )}
+            </div>
+          </Reveal>
+        )}
+
+        {loading ? (
+          <LoadingState />
+        ) : items.length === 0 ? (
+          <EmptyState text="لسه مفيش تقييمات منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
+        ) : filtered.length === 0 ? (
+          <EmptyState text="مفيش تقييمات بالعدد ده من النجوم." />
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((r, i) => (
+              <ReviewCard key={r.id} r={r} delay={i * 60} />
+            ))}
+          </div>
+        )}
+
+        <Reveal delay={200} className="text-center mt-14">
+          <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>عايز تجربة زي دي مع براندك؟</p>
+          <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn-primary">احجز استشارة مجانية</a>
+        </Reveal>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   شريط "أحدث التقييمات" — ثابت في آخر كل صفحة (فوق الفوتر مباشرة) في كل
+   أنحاء الموقع، بشكل مصغّر مع لينك لصفحة التقييمات الكاملة.
+   --------------------------------------------------------------------------- */
+function LatestReviewsStrip({ setPage }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    fetchVisibleReviews({ limit: 6 })
+      .then((data) => { if (alive) setItems(data); })
+      .catch(() => { if (alive) setItems([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading || items.length === 0) return null;
+
+  const avgRating = items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length;
+
+  return (
+    <section dir="rtl" className="px-6 md:px-10 py-16" style={{ background: "transparent", borderTop: "1px solid var(--border)" }}>
+      <div className="max-w-6xl mx-auto">
+        <Reveal className="flex flex-wrap items-center justify-between gap-4 mb-8">
+          <div>
+            <SectionLabel>CLIENT VOICE</SectionLabel>
+            <h2 className="text-xl md:text-2xl font-black tracking-wide mt-2" style={{ fontFamily: "var(--font-cinzel), serif", color: "var(--text-primary)" }}>
+              أحدث تقييمات العملاء
+            </h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <ReviewStars rating={Math.round(avgRating)} />
+              <span className="text-sm font-bold" style={{ color: "var(--gold-light)" }}>{avgRating.toFixed(1)}</span>
+            </div>
+            <button onClick={() => setPage("reviews")} className="btn-outline text-xs !px-4 !py-2">عرض كل التقييمات</button>
+          </div>
+        </Reveal>
+
+        <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "thin" }}>
+          {items.map((r, i) => (
+            <div key={r.id} className="card-pro rounded-2xl p-5 flex-shrink-0" style={{ width: 280 }}>
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-black text-xs" style={{ border: "1px solid var(--border-soft)", background: "rgba(201,150,58,0.1)", color: "var(--gold-light)" }}>
+                  {r.avatar_url ? (
+                    <Image src={r.avatar_url} alt={r.client_name} fill sizes="36px" className="object-cover" />
+                  ) : (
+                    (r.client_name || "?").trim().charAt(0)
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-black truncate" style={{ color: "var(--text-primary)" }}>{r.client_name}</div>
+                  {r.company_name && <div className="text-[10.5px] truncate" style={{ color: "var(--text-muted)" }}>{r.company_name}</div>}
+                </div>
+              </div>
+              <ReviewStars rating={r.rating} />
+              <p className="text-xs leading-relaxed mt-2 line-clamp-3" style={{ color: "var(--text-secondary)" }}>{r.comment}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function NotificationBell({ notifications, unreadCount, onItemClick, onMarkAllRead, onViewAll, compact }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -2326,7 +2525,7 @@ function Navbar({ page, setPage, clientSession, notifications, unreadCount, onNo
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
-  const DIRECT_PAGES = ["home", "posts", "post-details", "services", "gallery", "portfolio-gallery", "case-studies", "blog", "about", "contact"];
+  const DIRECT_PAGES = ["home", "posts", "post-details", "services", "gallery", "portfolio-gallery", "case-studies", "blog", "reviews", "about", "contact"];
   const links = [
     { id: "home", label: "الرئيسية" },
     { id: "posts", label: "المنشورات" },
@@ -2335,6 +2534,7 @@ function Navbar({ page, setPage, clientSession, notifications, unreadCount, onNo
     { id: "portfolio-gallery", label: "معرض الأعمال" },
     { id: "case-studies", label: "دراسات الحالة" },
     { id: "blog", label: "البرومتات" },
+    { id: "reviews", label: "التقييمات" },
     { id: "about", label: "من نحن" },
     { id: "contact", label: "تواصل معنا" },
   ];
@@ -2726,6 +2926,7 @@ export default function App() {
         />
       )}
       {page === "blog" && <PromptsPage />}
+      {page === "reviews" && <ReviewsPage />}
       {page === "about" && <AboutPage setPage={setPage} />}
       {page === "contact" && <ContactPage />}
       {page === "builder" && <BuilderPage setPage={setPage} initialData={builderInitialData} />}
@@ -2792,6 +2993,9 @@ export default function App() {
         />
       )}
 
+      {!["admin", "login", "signup", "forgot-password", "reset-password", "dashboard"].includes(page) && (
+        <LatestReviewsStrip setPage={setPage} />
+      )}
       <Footer setPage={setPage} />
     </>
   );

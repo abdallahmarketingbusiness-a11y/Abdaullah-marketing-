@@ -11,6 +11,7 @@ import { signOutAdmin } from "../services/authService";
 import DashboardOverview from "./DashboardOverview";
 import PortfolioManager from "./PortfolioManager";
 import TestimonialsManager from "./TestimonialsManager";
+import ReviewsManager from "./ReviewsManager";
 import AboutManager from "./AboutManager";
 import AnalyticsManager from "./AnalyticsManager";
 import ClientPortalManager from "./ClientPortalManager";
@@ -101,6 +102,7 @@ const TABS = [
   { id: "homepage", label: "🏠 الصفحة الرئيسية" },
   { id: "ai-chats", label: "🤖 محادثات الذكاء الاصطناعي" },
   { id: "testimonials", label: "🎓 الشهادات" },
+  { id: "reviews", label: "⭐ تقييمات العملاء" },
   { id: "about", label: "👤 من نحن والإعدادات" },
 ];
 
@@ -211,6 +213,7 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
         {tab === "homepage" && <HomepageSectionsManager />}
         {tab === "ai-chats" && <AiChatsManager />}
         {tab === "testimonials" && <TestimonialsManager />}
+        {tab === "reviews" && <ReviewsManager />}
         {tab === "about" && <AboutManager />}
 
         {tab === "packages" && (loading ? (

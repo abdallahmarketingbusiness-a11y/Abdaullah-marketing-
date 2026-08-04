@@ -39,6 +39,7 @@ import Toast from "./Toast";
 import FilePreviewModal from "./FilePreviewModal";
 import { AnalyticsTrendChart, PostsCompareList, InsightList } from "./AnalyticsCharts";
 import { fetchMySubscriptions, requestRenewal } from "../services/subscriptionService";
+import { fetchVisibleReviews } from "../services/reviewsService";
 
 // ============================================================================
 // إعدادات وعناصر عامة
@@ -984,7 +985,59 @@ function NotificationsSection({ notifications, onNotificationClick, onMarkAllRea
 }
 
 // ============================================================================
-// 11) الملف الشخصي (قابل للتعديل)
+// 11) تقييمات العملاء — يشوف فيها العميل آراء وتقييمات باقي العملاء
+// ============================================================================
+function ReviewsSection() {
+  const [items, setItems] = useState(null);
+
+  useEffect(() => {
+    fetchVisibleReviews().then(setItems).catch(() => setItems([]));
+  }, []);
+
+  if (!items) return <SectionLoading />;
+  if (items.length === 0) return <EmptyState text="لسه مفيش تقييمات منشورة." />;
+
+  const avgRating = items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length;
+
+  return (
+    <div>
+      <Card style={{ marginBottom: 18, display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 34, fontWeight: 900, color: GOLD3 }}>{avgRating.toFixed(1)}</div>
+          <div style={{ color: GOLD, fontSize: 13, letterSpacing: 1 }}>{"★".repeat(Math.round(avgRating))}{"☆".repeat(5 - Math.round(avgRating))}</div>
+        </div>
+        <div style={{ color: "#999", fontSize: 12.5 }}>
+          متوسط تقييم <strong style={{ color: "#fff" }}>{items.length}</strong> عميل تعاملوا معانا قبل كده
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
+        {items.map((r) => (
+          <Card key={r.id}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              {r.avatar_url ? (
+                <img src={r.avatar_url} alt={r.client_name} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(201,150,58,0.14)", color: GOLD3, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 14, flexShrink: 0 }}>
+                  {getInitials(r.client_name)}
+                </div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{r.client_name}</div>
+                {r.company_name && <div style={{ color: "#888", fontSize: 11 }}>{r.company_name}</div>}
+              </div>
+            </div>
+            <div style={{ color: GOLD, fontSize: 12, marginBottom: 6 }}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</div>
+            <p style={{ color: "#ccc", fontSize: 12.5, margin: 0, lineHeight: 1.7 }}>{r.comment}</p>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// 12) الملف الشخصي (قابل للتعديل)
 // ============================================================================
 function ProfileSection({ profile, email, refreshProfile, notify }) {
   const [fullName, setFullName] = useState(profile?.full_name || "");
@@ -1106,6 +1159,7 @@ const SECTIONS = [
   { id: "scripts", label: "السكربتات", icon: "✍️", subtitle: "نصوص الإعلانات والمحتوى", render: ScriptsSection },
   { id: "notes", label: "الملاحظات", icon: "🗒️", subtitle: "ملاحظات وتحديثات فريق العمل", render: NotesSection },
   { id: "invoices", label: "الفواتير", icon: "🧾", subtitle: "سجل فواتيرك وحالة الدفع", render: InvoicesSection },
+  { id: "reviews", label: "تقييمات العملاء", icon: "⭐", subtitle: "آراء وتقييمات عملاء تعاملوا معانا", render: ReviewsSection },
   { id: "notifications", label: "الإشعارات", icon: "🔔", subtitle: "كل جديد يخص حسابك", render: NotificationsSection },
   { id: "profile", label: "الملف الشخصي", icon: "👤", subtitle: "عدّل بياناتك الشخصية وكلمة المرور", render: ProfileSection },
 ];
