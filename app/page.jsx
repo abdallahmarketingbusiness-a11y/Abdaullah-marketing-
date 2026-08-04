@@ -28,6 +28,8 @@ import {
 } from "../services/clientPortalService";
 import { NOTIF_ICONS } from "../lib/notificationIcons";
 import { PostsFeedSection, PostsGridPage, PostDetailPage } from "../components/PostsHub";
+import HomepageDynamicSection from "../components/HomepageDynamicSection";
+import { fetchHomepageSections } from "../services/homepageService";
 import MarketingChatWidget from "../components/MarketingChatWidget";
 
 // تحميل كسول (code-splitting) لصفحات الأدمن ولوحة العميل وتسجيل الدخول/الاشتراك.
@@ -261,14 +263,43 @@ function LogoSVG({ size = 110 }) {
   );
 }
 
-function HeroPage({ setPage }) {
+function HeroPage({ setPage, content = {} }) {
+  const eyebrow = content.eyebrow || "✦ SOCIAL MEDIA MARKETING · أسيوط ✦";
+  const subtitle = content.subtitle || "نحوّل حضورك الرقمي إلى محرك نمو حقيقي — محتوى احترافي، إدارة ذكية، ونتائج تُقاس بالأرقام";
+  const buttons = Array.isArray(content.buttons) && content.buttons.length > 0
+    ? content.buttons
+    : [
+        { label: "🚀 ابدأ رحلتك معنا", url: WA_LINK },
+        { label: "📦 الباقات", url: "#pricing" },
+        { label: "📁 الباقات المخصصة", url: "#gallery" },
+      ];
+  const stats = Array.isArray(content.items) && content.items.length > 0
+    ? content.items.map((it) => ({ num: it.title, label: it.desc }))
+    : [
+        { num: "+5", label: "عملاء راضون" },
+        { num: "3+", label: "مجالات متخصصة" },
+        { num: "6", label: "خدمات احترافية" },
+        { num: "24/7", label: "دعم مستمر" },
+      ];
+
+  function handleButtonClick(e, url) {
+    if (url === "#pricing") {
+      e.preventDefault();
+      setPage("home");
+      setTimeout(() => { const el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }, 80);
+    } else if (url === "#gallery") {
+      e.preventDefault();
+      setPage("gallery");
+    }
+  }
+
   return (
     <section dir="rtl" className="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-28 pb-16 relative overflow-hidden" style={{ background: "transparent" }}>
       <div className="absolute pointer-events-none" style={{ top: "8%", left: "50%", transform: "translateX(-50%)", width: 700, height: 500, background: "radial-gradient(ellipse, rgba(201,150,58,0.12) 0%, transparent 65%)" }} />
       <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
       <Particles />
       <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest mb-7 px-5 py-2 rounded-full border" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.3)", animation: "fadeDown .8s ease forwards" }}>
-        ✦ SOCIAL MEDIA MARKETING · أسيوط ✦
+        {eyebrow}
       </div>
       <div className="mb-7" style={{ animation: "scaleIn 1s cubic-bezier(.16,1,.3,1) forwards" }}>
         <LogoSVG size={160} />
@@ -280,27 +311,26 @@ function HeroPage({ setPage }) {
         MARKETING
       </h2>
       <p className="text-base leading-relaxed max-w-lg mx-auto mb-10" style={{ color: "#999", animation: "fadeUp .9s .35s ease both" }}>
-        نحوّل حضورك الرقمي إلى محرك نمو حقيقي — محتوى احترافي، إدارة ذكية، ونتائج تُقاس بالأرقام
+        {subtitle}
       </p>
       <div className="flex gap-3 flex-wrap justify-center mb-16" style={{ animation: "fadeUp .9s .45s ease both" }}>
-        <a href={WA_LINK} target="_blank" rel="noreferrer" className="font-black px-8 py-3 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
-          🚀 ابدأ رحلتك معنا
-        </a>
-        <button onClick={() => { setPage("home"); setTimeout(() => { const el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }, 80); }} className="font-bold px-8 py-3 rounded-xl text-sm transition duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
-          📦 الباقات
-        </button>
-        <button onClick={() => setPage("gallery")} className="font-bold px-8 py-3 rounded-xl text-sm transition duration-300 border hover:bg-yellow-900/10" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
-          📁 الباقات المخصصة
-        </button>
+        {buttons.map((b, i) => (
+          <a
+            key={i}
+            href={b.url || "#"}
+            target={b.url?.startsWith("http") ? "_blank" : undefined}
+            rel="noreferrer"
+            onClick={(e) => handleButtonClick(e, b.url)}
+            className={i === 0 ? "font-black px-8 py-3 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" : "font-bold px-8 py-3 rounded-xl text-sm transition duration-300 border hover:bg-yellow-900/10"}
+            style={i === 0 ? { background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" } : { color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}
+          >
+            {b.label}
+          </a>
+        ))}
       </div>
       <div className="flex flex-wrap justify-center border-t border-b w-full max-w-2xl" style={{ borderColor: "#2A2A2A", animation: "fadeUp .9s .55s ease both" }}>
-        {[
-          { num: "+5", label: "عملاء راضون" },
-          { num: "3+", label: "مجالات متخصصة" },
-          { num: "6", label: "خدمات احترافية" },
-          { num: "24/7", label: "دعم مستمر" },
-        ].map((s, i) => (
-          <div key={i} className="flex-1 py-5 px-6 text-center" style={{ borderLeft: i < 3 ? "1px solid #2A2A2A" : "none", minWidth: 120 }}>
+        {stats.map((s, i) => (
+          <div key={i} className="flex-1 py-5 px-6 text-center" style={{ borderLeft: i < stats.length - 1 ? "1px solid #2A2A2A" : "none", minWidth: 120 }}>
             <span className="block text-2xl font-black mb-1" style={{ fontFamily: "var(--font-cinzel), serif", color: GOLD }}>{s.num}</span>
             <span className="text-xs tracking-wider font-semibold" style={{ color: "#666" }}>{s.label}</span>
           </div>
@@ -310,8 +340,12 @@ function HeroPage({ setPage }) {
   );
 }
 
-function ServicesSection({ setPage }) {
+function ServicesSection({ setPage, content = {} }) {
   const [dbServices, setDbServices] = useState(null);
+  const eyebrow = content.eyebrow || "OUR SERVICES";
+  const title = content.title || "خدماتنا الاحترافية";
+  const subtitle = content.subtitle || "حلول متكاملة تحوّل علامتك التجارية إلى قوة رقمية لا تُنافَس";
+  const ctaBtn = (Array.isArray(content.buttons) && content.buttons[0]) || { label: "💬 احجز استشارة مجانية الآن", url: WA_LINK };
 
   // خدمات قابلة للإضافة والتعديل من السوبر أدمن (تبويب "المحتوى" → "🛠️ خدماتي")
   // — لو مفيش خدمات لسه مضافة من الأدمن، بتظهر القائمة الأساسية القديمة
@@ -329,9 +363,9 @@ function ServicesSection({ setPage }) {
   return (
     <section id="services" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
-        <SectionLabel>OUR SERVICES</SectionLabel>
-        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>خدماتنا الاحترافية</h2>
-        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">حلول متكاملة تحوّل علامتك التجارية إلى قوة رقمية لا تُنافَس</p>
+        <SectionLabel>{eyebrow}</SectionLabel>
+        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>{title}</h2>
+        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">{subtitle}</p>
       </Reveal>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
         {visibleServices.map((s, i) => (
@@ -347,15 +381,15 @@ function ServicesSection({ setPage }) {
         ))}
       </div>
       <Reveal className="text-center mt-12">
-        <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
-          💬 احجز استشارة مجانية الآن
+        <a href={ctaBtn.url || WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-black px-10 py-4 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
+          {ctaBtn.label}
         </a>
       </Reveal>
     </section>
   );
 }
 
-function PortfolioSection() {
+function PortfolioSection({ content = {} }) {
   const [filter, setFilter] = useState("all");
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
@@ -395,9 +429,9 @@ function PortfolioSection() {
   return (
     <section id="portfolio" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-8">
-        <SectionLabel>MY WORK</SectionLabel>
-        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>أعمالي الحقيقية</h2>
-        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">تصاميم ومحتوى نفّذته لعملاء حقيقيين في مجالات مختلفة</p>
+        <SectionLabel>{content.eyebrow || "MY WORK"}</SectionLabel>
+        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>{content.title || "أعمالي الحقيقية"}</h2>
+        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">{content.subtitle || "تصاميم ومحتوى نفّذته لعملاء حقيقيين في مجالات مختلفة"}</p>
       </Reveal>
 
       {allCategories.length > 0 && (
@@ -485,16 +519,19 @@ function PortfolioSection() {
   );
 }
 
-function TipsSection() {
+function TipsSection({ content = {} }) {
+  const tipItems = Array.isArray(content.items) && content.items.length > 0
+    ? content.items.map((it, i) => ({ num: String(i + 1).padStart(2, "0"), icon: it.icon, title: it.title, body: it.desc, tag: it.tag }))
+    : tips;
   return (
     <section id="tips" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
-        <SectionLabel>TIPS & INSIGHTS</SectionLabel>
-        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>نصائح للمشاريع</h2>
-        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">خلاصة تجربتي — نصائح عملية تساعدك تنمو رقمياً بشكل أسرع وأذكى</p>
+        <SectionLabel>{content.eyebrow || "TIPS & INSIGHTS"}</SectionLabel>
+        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>{content.title || "نصائح للمشاريع"}</h2>
+        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">{content.subtitle || "خلاصة تجربتي — نصائح عملية تساعدك تنمو رقمياً بشكل أسرع وأذكى"}</p>
       </Reveal>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {tips.map((t, i) => (
+        {tipItems.map((t, i) => (
           <Reveal key={i} delay={i * 35}>
             <div className="rounded-2xl p-8 border relative overflow-hidden transition duration-300 group hover:-translate-y-1" style={{ background: "#161616", borderColor: "#2A2A2A" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,150,58,0.25)"; e.currentTarget.style.boxShadow = "0 20px 60px rgba(0,0,0,.4)"; }}
@@ -1211,7 +1248,7 @@ function BuilderPage({ setPage, initialData }) {
 }
 
 
-function PricingSection({ setPage }) {
+function PricingSection({ setPage, content = {} }) {
   const [active, setActive] = useState(null);
   const [subscribingPkg, setSubscribingPkg] = useState(null);
   const WA = WA_LINK;
@@ -1320,13 +1357,13 @@ function PricingSection({ setPage }) {
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-14">
-          <p style={{ color: GOLD2, fontSize: 13, letterSpacing: 6, fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>PRICING PLANS</p>
+          <p style={{ color: GOLD2, fontSize: 13, letterSpacing: 6, fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>{content.eyebrow || "PRICING PLANS"}</p>
           <h2 style={{ fontFamily: "var(--font-cairo), sans-serif", fontSize: "clamp(28px,5vw,44px)", fontWeight: 900, color: "#fff", marginBottom: 14, lineHeight: 1.2 }}>
-            اختار الباقة اللي تناسبك
+            {content.title || "اختار الباقة اللي تناسبك"}
           </h2>
           <div style={{ width: 60, height: 3, background: `linear-gradient(90deg,transparent,${GOLD},transparent)`, margin: "0 auto 16px" }} />
           <p style={{ color: "#888", fontSize: 15, maxWidth: 520, margin: "0 auto" }}>
-            باقات مصممة خصيصاً لكل نوع أعمال — من البداية للاحتراف الكامل
+            {content.subtitle || "باقات مصممة خصيصاً لكل نوع أعمال — من البداية للاحتراف الكامل"}
           </p>
         </div>
 
@@ -1495,7 +1532,8 @@ function PricingSection({ setPage }) {
   );
 }
 
-function WhySection() {
+function WhySection({ content = {} }) {
+  const items = Array.isArray(content.items) && content.items.length > 0 ? content.items : whyPoints;
   return (
     <section id="why" dir="rtl" className="py-24 px-6 md:px-16" style={{ background: "transparent" }}>
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16">
@@ -1511,11 +1549,11 @@ function WhySection() {
         </Reveal>
         <div>
           <Reveal>
-            <SectionLabel>WHY US</SectionLabel>
-            <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-8 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>لماذا تختار Abdullah Marketing؟</h2>
+            <SectionLabel>{content.eyebrow || "WHY US"}</SectionLabel>
+            <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-8 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>{content.title || "لماذا تختار Abdullah Marketing؟"}</h2>
           </Reveal>
           <div className="space-y-6">
-            {whyPoints.map((p, i) => (
+            {items.map((p, i) => (
               <Reveal key={i} delay={i * 55}>
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: "rgba(201,150,58,0.1)", border: "1px solid rgba(201,150,58,0.2)" }}>{p.icon}</div>
@@ -1538,17 +1576,20 @@ function WhySection() {
   );
 }
 
-function ProcessSection() {
+function ProcessSection({ content = {} }) {
+  const items = Array.isArray(content.items) && content.items.length > 0
+    ? content.items.map((it, i) => ({ n: String(i + 1), icon: it.icon, title: it.title, desc: it.desc }))
+    : steps;
   return (
     <section id="process" dir="rtl" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-16">
-        <SectionLabel>HOW WE WORK</SectionLabel>
-        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>آلية العمل</h2>
-        <p className="text-sm text-gray-500">أربع خطوات من التواصل الأول حتى النتائج</p>
+        <SectionLabel>{content.eyebrow || "HOW WE WORK"}</SectionLabel>
+        <h2 className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>{content.title || "آلية العمل"}</h2>
+        <p className="text-sm text-gray-500">{content.subtitle || "أربع خطوات من التواصل الأول حتى النتائج"}</p>
       </Reveal>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto relative">
         <div className="absolute hidden md:block" style={{ top: 38, right: "10%", left: "10%", height: 1, background: "linear-gradient(90deg,transparent,#2A2A2A,#2A2A2A,transparent)" }} />
-        {steps.map((s, i) => (
+        {items.map((s, i) => (
           <Reveal key={i} delay={i * 55}>
             <div className="text-center group">
               <div className="relative w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center text-2xl transition duration-300 group-hover:scale-105" style={{ background: "#161616", border: "1px solid #2A2A2A" }}
@@ -1585,13 +1626,29 @@ const caseStudyServices = [
   { icon: "✨", label: "تحسين الهوية الرقمية للمطعم" },
 ];
 
-function FeaturedProjectSection() {
+function FeaturedProjectSection({ content = {} }) {
+  const eyebrow = content.eyebrow || "FEATURED CASE STUDY";
+  const title = content.title || "آخر أعمالنا";
+  const subtitle = content.subtitle || "دراسة حالة كاملة توضح كيف حوّلنا فكرة مطعم إلى تجربة رقمية متكاملة";
+  const clientName = content.client_name || "La Casa De Burger";
+  const body = content.body || "قمنا بتصميم وتطوير موقع إلكتروني احترافي لمطعم La Casa De Burger بهدف تقديم تجربة رقمية حديثة للعملاء، مع عرض المنيو بشكل منظم، وسهولة الوصول للطلبات عبر QR Code وWhatsApp، مع الحفاظ على الهوية البصرية للمطعم وتحسين تجربة المستخدم على جميع الأجهزة.";
+  const imageUrl = content.image_url || IMG_LCDB_WEBSITE;
+  const buttons = Array.isArray(content.buttons) && content.buttons.length > 0
+    ? content.buttons
+    : [
+        { label: "🌐 زيارة الموقع", url: "https://lacasa-de-burger-website.vercel.app/" },
+        { label: "ابدأ مشروع مشابه", url: WA_LINK },
+      ];
+  const services = Array.isArray(content.items) && content.items.length > 0
+    ? content.items.map((it) => ({ icon: it.icon, label: it.title }))
+    : caseStudyServices;
+
   return (
     <section id="case-study" dir="rtl" aria-labelledby="case-study-heading" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-6">
-        <SectionLabel>FEATURED CASE STUDY</SectionLabel>
-        <h2 id="case-study-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>آخر أعمالنا</h2>
-        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">دراسة حالة كاملة توضح كيف حوّلنا فكرة مطعم إلى تجربة رقمية متكاملة</p>
+        <SectionLabel>{eyebrow}</SectionLabel>
+        <h2 id="case-study-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>{title}</h2>
+        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">{subtitle}</p>
       </Reveal>
 
       <Reveal>
@@ -1608,7 +1665,7 @@ function FeaturedProjectSection() {
                 </span>
               </div>
               <div className="relative flex-1 overflow-hidden">
-                <Image src={IMG_LCDB_WEBSITE} alt="لقطة شاشة من الموقع الرسمي لـ La Casa De Burger" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover object-top" />
+                <Image src={imageUrl} alt={`لقطة شاشة من الموقع الرسمي لـ ${clientName}`} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover object-top" />
                 <div className="absolute inset-0" style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.7), transparent 40%)" }} />
                 <div className="absolute bottom-4 right-4 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: "rgba(201,150,58,0.95)", color: "#000" }}>
                   Restaurant Website & Digital Menu
@@ -1618,23 +1675,29 @@ function FeaturedProjectSection() {
 
             <div className="p-8 md:p-10">
               <div className="text-xs font-bold tracking-widest mb-2" style={{ color: GOLD }}>CASE STUDY</div>
-              <h3 className="text-2xl font-black text-white mb-4" style={{ fontFamily: "var(--font-cinzel), serif" }}>La Casa De Burger</h3>
+              <h3 className="text-2xl font-black text-white mb-4" style={{ fontFamily: "var(--font-cinzel), serif" }}>{clientName}</h3>
               <p className="text-sm leading-relaxed mb-6" style={{ color: "#999" }}>
-                قمنا بتصميم وتطوير موقع إلكتروني احترافي لمطعم La Casa De Burger بهدف تقديم تجربة رقمية حديثة للعملاء، مع عرض المنيو بشكل منظم، وسهولة الوصول للطلبات عبر QR Code وWhatsApp، مع الحفاظ على الهوية البصرية للمطعم وتحسين تجربة المستخدم على جميع الأجهزة.
+                {body}
               </p>
 
               <div className="flex flex-wrap gap-3 mb-8">
-                <a href="https://lacasa-de-burger-website.vercel.app/" target="_blank" rel="noreferrer" className="inline-block font-black px-6 py-3 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" }}>
-                  🌐 زيارة الموقع
-                </a>
-                <a href={WA_LINK} target="_blank" rel="noreferrer" className="inline-block font-bold px-6 py-3 rounded-xl text-sm transition duration-300 border" style={{ color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}>
-                  ابدأ مشروع مشابه
-                </a>
+                {buttons.map((b, i) => (
+                  <a
+                    key={i}
+                    href={b.url || "#"}
+                    target={b.url?.startsWith("http") ? "_blank" : undefined}
+                    rel="noreferrer"
+                    className={i === 0 ? "inline-block font-black px-6 py-3 rounded-xl text-black text-sm transition duration-300 hover:-translate-y-1" : "inline-block font-bold px-6 py-3 rounded-xl text-sm transition duration-300 border"}
+                    style={i === 0 ? { background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: "0 4px 30px rgba(201,150,58,0.3)" } : { color: GOLD, borderColor: "rgba(201,150,58,0.4)" }}
+                  >
+                    {b.label}
+                  </a>
+                ))}
               </div>
 
               <h4 className="text-xs font-bold tracking-widest mb-4" style={{ color: "#666" }}>الخدمات المقدمة</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {caseStudyServices.map((s, i) => (
+                {services.map((s, i) => (
                   <Reveal key={i} delay={i * 35}>
                     <div className="flex items-center gap-3 rounded-xl p-3 border transition duration-300 hover:-translate-y-0.5" style={{ background: "#1A1A1A", borderColor: "#2A2A2A" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; }}
@@ -1664,20 +1727,28 @@ const testimonial = {
 // Placeholder fallback if the quote above is not yet confirmed by the client:
 // const testimonial = { client: "La Casa De Burger", quote: "[بانتظار رأي معتمد من العميل — يُستبدل هذا النص قبل نشر الموقع]", img: IMG_LCDB_13 };
 
-function TestimonialsSection() {
+function TestimonialsSection({ content = {} }) {
+  const eyebrow = content.eyebrow || "CLIENT VOICE";
+  const title = content.title || "آراء العملاء";
+  const subtitle = content.subtitle || "ثقة عملائنا هي أكبر دليل على جودة العمل";
+  const quote = content.body || testimonial.quote;
+  const clientName = content.client_name || testimonial.client;
+  const subLabel = content.sub_label || "La Casa De Burger — Restaurant";
+  const imgSrc = content.image_url || testimonial.img;
+
   return (
     <section id="testimonials" dir="rtl" aria-labelledby="testimonials-heading" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
       <Reveal className="text-center mb-14">
-        <SectionLabel>CLIENT VOICE</SectionLabel>
-        <h2 id="testimonials-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>آراء العملاء</h2>
-        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">ثقة عملائنا هي أكبر دليل على جودة العمل</p>
+        <SectionLabel>{eyebrow}</SectionLabel>
+        <h2 id="testimonials-heading" className="text-3xl md:text-4xl font-black tracking-wide mb-3 text-white" style={{ fontFamily: "var(--font-cinzel), serif" }}>{title}</h2>
+        <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">{subtitle}</p>
       </Reveal>
 
       <Reveal>
         <div className="max-w-2xl mx-auto rounded-3xl p-8 md:p-10 border relative text-center transition duration-300 hover:-translate-y-1" style={{ background: "#161616", borderColor: "rgba(201,150,58,0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
           <div className="text-4xl mb-4" style={{ color: GOLD, opacity: 0.6 }} aria-hidden="true">❝</div>
 
-          <p className="text-sm md:text-base leading-relaxed mb-6" style={{ color: "#ddd" }}>{testimonial.quote}</p>
+          <p className="text-sm md:text-base leading-relaxed mb-6" style={{ color: "#ddd" }}>{quote}</p>
 
           <div className="flex items-center justify-center gap-1 mb-6" aria-label="تقييم خمس نجوم" role="img">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -1687,11 +1758,11 @@ function TestimonialsSection() {
 
           <div className="flex items-center justify-center gap-3">
             <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0" style={{ border: `2px solid ${GOLD}`, boxShadow: "0 0 20px rgba(201,150,58,0.3)" }}>
-              <Image src={testimonial.img} alt={`${testimonial.client} logo`} fill sizes="56px" className="object-cover" />
+              <Image src={imgSrc} alt={`${clientName} logo`} fill sizes="56px" className="object-cover" />
             </div>
             <div className="text-right">
-              <div className="text-sm font-bold text-white">{testimonial.client}</div>
-              <div className="text-xs" style={{ color: "#666" }}>La Casa De Burger — Restaurant</div>
+              <div className="text-sm font-bold text-white">{clientName}</div>
+              <div className="text-xs" style={{ color: "#666" }}>{subLabel}</div>
             </div>
           </div>
         </div>
@@ -2365,6 +2436,23 @@ function Footer({ setPage }) {
   );
 }
 
+// خريطة section_key → المكوّن الأساسي اللي بيرسمه في الصفحة الرئيسية
+const CORE_SECTION_COMPONENTS = {
+  hero: HeroPage,
+  "posts-feed": PostsFeedSection,
+  services: ServicesSection,
+  "case-study": FeaturedProjectSection,
+  portfolio: PortfolioSection,
+  tips: TipsSection,
+  pricing: PricingSection,
+  why: WhySection,
+  testimonials: TestimonialsSection,
+  process: ProcessSection,
+};
+
+// الترتيب الافتراضي (احتياطي) لو جدول homepage_sections لسه فاضي أو التحميل فشل
+const DEFAULT_HOME_ORDER = ["hero", "posts-feed", "services", "case-study", "portfolio", "tips", "pricing", "why", "testimonials", "process"];
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [selectedPackageId, setSelectedPackageId] = useState(null);
@@ -2374,6 +2462,18 @@ export default function App() {
   const [clientSession, setClientSession] = useState(null);
   const [clientAuthChecked, setClientAuthChecked] = useState(false);
   const [notifications, setNotifications] = useState(null);
+
+  // أقسام الصفحة الرئيسية (نظام "إدارة الصفحة الرئيسية" للسوبر أدمن) —
+  // بيتحمّلوا مرتّبين وظاهرين بس؛ لو فشل التحميل أو لسه الجدول فاضي،
+  // بنرجع لنفس الترتيب الثابت القديم عشان الصفحة الرئيسية ما توقفش.
+  const [homepageSections, setHomepageSections] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    fetchHomepageSections()
+      .then((data) => { if (alive) setHomepageSections(data); })
+      .catch(() => { if (alive) setHomepageSections([]); });
+    return () => { alive = false; };
+  }, []);
 
   // نظام الباقات المخصصة يستخدم روابط hash (#gallery, #admin, #package-details?id=..)
   // عشان صفحة /admin تكون قابلة للوصول برابط مباشر وغير موجودة في القائمة العادية،
@@ -2540,9 +2640,6 @@ export default function App() {
         .animate-spin-slow { animation: spin-slow 20s linear infinite; }
       `}</style>
       <WAButton />
-      {!["admin", "login", "signup", "forgot-password", "reset-password", "dashboard"].includes(page) && (
-        <MarketingChatWidget clientSession={clientSession} setPage={setPage} />
-      )}
       {!["admin", "login", "signup", "forgot-password", "reset-password"].includes(page) && <AnnouncementBar />}
       <Navbar
         page={page}
@@ -2553,21 +2650,31 @@ export default function App() {
         onNotificationClick={handleNotificationClick}
         onMarkAllRead={handleMarkAllNotificationsRead}
       />
+      {!["admin", "login", "signup", "forgot-password", "reset-password", "dashboard"].includes(page) && (
+        <MarketingChatWidget clientSession={clientSession} setPage={setPage} />
+      )}
       {page === "home" && (
         <>
-          <HeroPage setPage={setPage} />
-          <PostsFeedSection
-            onOpenPost={(id) => { setSelectedPostId(id); setPage("post-details"); }}
-            onViewAll={() => setPage("posts")}
-          />
-          <ServicesSection setPage={setPage} />
-          <FeaturedProjectSection />
-          <PortfolioSection />
-          <TipsSection />
-          <PricingSection setPage={setPage} />
-          <WhySection />
-          <TestimonialsSection />
-          <ProcessSection />
+          {(homepageSections && homepageSections.length > 0
+            ? homepageSections
+            : DEFAULT_HOME_ORDER.map((key) => ({ id: key, section_key: key, kind: "core", content: {} }))
+          ).map((section) => {
+            if (section.kind === "custom") {
+              return <HomepageDynamicSection key={section.id} section={section} />;
+            }
+            const Comp = CORE_SECTION_COMPONENTS[section.section_key];
+            if (!Comp) return null;
+            const extraProps =
+              section.section_key === "hero" || section.section_key === "services" || section.section_key === "pricing"
+                ? { setPage }
+                : section.section_key === "posts-feed"
+                ? {
+                    onOpenPost: (id) => { setSelectedPostId(id); setPage("post-details"); },
+                    onViewAll: () => setPage("posts"),
+                  }
+                : {};
+            return <Comp key={section.id} content={section.content} {...extraProps} />;
+          })}
         </>
       )}
       {page === "services" && (

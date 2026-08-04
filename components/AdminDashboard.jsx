@@ -15,6 +15,7 @@ import AboutManager from "./AboutManager";
 import AnalyticsManager from "./AnalyticsManager";
 import ClientPortalManager from "./ClientPortalManager";
 import ContentManager from "./ContentManager";
+import HomepageSectionsManager from "./HomepageSectionsManager";
 import SubscriptionsManager from "./SubscriptionsManager";
 import ClientsManager from "./ClientsManager";
 import NotificationsManager from "./NotificationsManager";
@@ -90,7 +91,6 @@ function QuickEditModal({ pkg, onClose, onSaved }) {
 const TABS = [
   { id: "overview", label: "📊 لوحة القيادة" },
   { id: "clients", label: "👥 إدارة العملاء" },
-  { id: "ai-chats", label: "🤖 محادثات الذكاء الاصطناعي" },
   { id: "notifications", label: "🔔 الإشعارات" },
   { id: "packages", label: "🛠️ الباقات" },
   { id: "subscriptions", label: "💳 الاشتراكات" },
@@ -98,6 +98,8 @@ const TABS = [
   { id: "portal", label: "🗂️ بيانات لوحة العميل" },
   { id: "portfolio", label: "🖼️ معرض الأعمال" },
   { id: "content", label: "🗞️ المحتوى (دراسات وحالات ومنشورات ومدونة)" },
+  { id: "homepage", label: "🏠 الصفحة الرئيسية" },
+  { id: "ai-chats", label: "🤖 محادثات الذكاء الاصطناعي" },
   { id: "testimonials", label: "🎓 الشهادات" },
   { id: "about", label: "👤 من نحن والإعدادات" },
 ];
@@ -200,13 +202,14 @@ export default function AdminDashboard({ onLogout, onOpenPackage }) {
 
         {tab === "overview" && <DashboardOverview />}
         {tab === "clients" && <ClientsManager />}
-        {tab === "ai-chats" && <AiChatsManager />}
         {tab === "notifications" && <NotificationsManager />}
         {tab === "subscriptions" && <SubscriptionsManager />}
         {tab === "analytics" && <AnalyticsManager />}
         {tab === "portal" && <ClientPortalManager />}
         {tab === "portfolio" && <PortfolioManager />}
         {tab === "content" && <ContentManager />}
+        {tab === "homepage" && <HomepageSectionsManager />}
+        {tab === "ai-chats" && <AiChatsManager />}
         {tab === "testimonials" && <TestimonialsManager />}
         {tab === "about" && <AboutManager />}
 
