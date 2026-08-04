@@ -349,7 +349,7 @@ export function PostsFeedSection({ onOpenPost, onViewAll }) {
   if (!loading && items.length === 0) return null; // مفيش داعي نعرض قسم فاضي في الرئيسية
 
   return (
-    <section dir="rtl" className="px-6 md:px-10 py-16 md:py-20" style={{ background: "transparent" }}>
+    <section dir="rtl" className="px-6 md:px-10 py-16 md:py-20" style={{ background: "var(--bg-elevated)" }}>
       <div className="max-w-lg mx-auto">
         <Reveal className="text-center mb-10">
           <SectionLabel>LATEST UPDATES</SectionLabel>

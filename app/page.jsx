@@ -17,7 +17,6 @@ import {
 } from "../services/portfolioService";
 import { isCurrentUserAdmin, signOutAdmin, getCurrentSession } from "../services/authService";
 import { fetchVisibleTestimonials } from "../services/testimonialsService";
-import { fetchVisibleReviews } from "../services/reviewsService";
 import AnnouncementBar from "../components/AnnouncementBar";
 import { getCurrentClientSession, onClientAuthStateChange, signOutClient } from "../services/clientAuthService";
 import { fetchPublished } from "../services/contentService";
@@ -1350,7 +1349,7 @@ function PricingSection({ setPage, content = {} }) {
   ];
 
   return (
-    <section id="pricing" dir="rtl" style={{ background: "transparent", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
+    <section id="pricing" dir="rtl" style={{ background: "linear-gradient(180deg,#060606 0%,#0a0802 50%,#060606 100%)", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
       {/* Background glow orbs */}
       <div style={{ position: "absolute", top: "10%", left: "5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(201,150,58,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: "10%", right: "5%", width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(110,231,247,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
@@ -2156,176 +2155,76 @@ function SocialContentShowcase() {
   );
 }
 
-function BlogPage() {
+function PromptsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState(null);
   useEffect(() => {
     let alive = true;
     fetchPublished("blogPosts").then((data) => { if (alive) setItems(data); }).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
 
+  async function handleCopy(item) {
+    try {
+      await navigator.clipboard.writeText(item.content || "");
+    } catch {
+      // خطة بديلة بسيطة لو الكليبورد اتمنع
+      const ta = document.createElement("textarea");
+      ta.value = item.content || "";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch {}
+      document.body.removeChild(ta);
+    }
+    setCopiedId(item.id);
+    setTimeout(() => setCopiedId((id) => (id === item.id ? null : id)), 2000);
+  }
+
   return (
     <div dir="rtl" className="min-h-screen px-6 py-28 relative">
       <div className="max-w-4xl mx-auto">
-        <PageHeader label="BLOG" title="المدونة" desc="مقالات ونصائح في عالم التسويق الرقمي والبراندنج، بنشاركها معاك بشكل دوري." />
+        <PageHeader label="PROMPTS" title="البرومتات" desc="مكتبة برومتات جاهزة للذكاء الاصطناعي، بننشرها ليك بشكل دوري — انسخ اللي يعجبك واستخدمه على طول." />
         {loading ? (
           <LoadingState />
         ) : items.length === 0 ? (
-          <EmptyState text="لسه مفيش مقالات منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
+          <EmptyState text="لسه مفيش برومتات منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
         ) : (
           <div className="space-y-5">
             {items.map((b, i) => (
               <Reveal key={b.id} delay={i * 70}>
-                <div className="card-pro rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-5">
-                  <div className="relative w-full sm:w-28 h-20 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.16), rgba(201,150,58,0.04))", color: "var(--gold)" }}>
-                    {b.cover_image_url ? <Image src={b.cover_image_url} alt={b.title} fill sizes="112px" className="object-cover" /> : "✎"}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      {b.category && <span className="badge-gold">{b.category}</span>}
-                      <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{b.read_time_minutes || 4} دقائق قراءة</span>
+                <div className="card-pro rounded-2xl p-6">
+                  <h3 className="text-base font-black mb-1" style={{ color: "var(--text-primary)" }}>{b.title}</h3>
+                  {b.excerpt && (
+                    <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--text-secondary)" }}>{b.excerpt}</p>
+                  )}
+                  {b.content && (
+                    <div className="relative rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-soft)" }}>
+                      <button
+                        onClick={() => handleCopy(b)}
+                        className="absolute top-2.5 left-2.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition"
+                        style={{
+                          border: "1px solid var(--gold)",
+                          background: copiedId === b.id ? "rgba(201,150,58,0.28)" : "rgba(201,150,58,0.1)",
+                          color: "var(--gold-light)",
+                        }}
+                      >
+                        {copiedId === b.id ? "✅ اتنسخ" : "📋 نسخ"}
+                      </button>
+                      <pre
+                        dir="ltr"
+                        className="text-xs whitespace-pre-wrap leading-relaxed overflow-x-auto"
+                        style={{ color: "var(--text-muted)", fontFamily: "monospace", margin: 0, padding: "14px 100px 14px 14px", textAlign: "left" }}
+                      >
+                        {b.content}
+                      </pre>
                     </div>
-                    <h3 className="text-base font-black mb-1" style={{ color: "var(--text-primary)" }}>{b.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{b.excerpt}</p>
-                  </div>
+                  )}
                 </div>
               </Reveal>
             ))}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function ReviewStars({ rating, size = "text-sm" }) {
-  return (
-    <div className={`flex items-center gap-0.5 ${size}`} aria-label={`${rating} من 5 نجوم`} role="img">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} style={{ color: i < rating ? GOLD : "var(--border)" }}>★</span>
-      ))}
-    </div>
-  );
-}
-
-function formatReviewDate(d) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" });
-}
-
-function ReviewCard({ r, delay }) {
-  return (
-    <Reveal delay={delay}>
-      <div className="card-pro rounded-2xl p-6 h-full flex flex-col">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-black text-base" style={{ border: "1px solid var(--border-soft)", background: "rgba(201,150,58,0.1)", color: "var(--gold-light)" }}>
-            {r.avatar_url ? (
-              <Image src={r.avatar_url} alt={r.client_name} fill sizes="48px" className="object-cover" />
-            ) : (
-              (r.client_name || "?").trim().charAt(0)
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-black truncate" style={{ color: "var(--text-primary)" }}>{r.client_name}</h3>
-            {r.company_name && <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{r.company_name}</p>}
-          </div>
-          <span className="text-lg opacity-70 flex-shrink-0" aria-hidden="true">”</span>
-        </div>
-
-        <ReviewStars rating={r.rating} />
-
-        <p className="text-sm leading-relaxed mt-3 mb-4 flex-1" style={{ color: "var(--text-secondary)" }}>{r.comment}</p>
-
-        <span className="text-[11px] pt-3" style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border)" }}>{formatReviewDate(r.review_date)}</span>
-      </div>
-    </Reveal>
-  );
-}
-
-function ReviewsPage() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [ratingFilter, setRatingFilter] = useState(0); // 0 = الكل
-
-  useEffect(() => {
-    let alive = true;
-    fetchVisibleReviews()
-      .then((data) => { if (alive) setItems(data); })
-      .catch(() => { if (alive) setItems([]); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
-  }, []);
-
-  const avgRating = items.length ? items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length : 0;
-  const filtered = ratingFilter ? items.filter((r) => r.rating === ratingFilter) : items;
-
-  const distribution = [5, 4, 3, 2, 1].map((star) => ({
-    star,
-    count: items.filter((r) => r.rating === star).length,
-    pct: items.length ? Math.round((items.filter((r) => r.rating === star).length / items.length) * 100) : 0,
-  }));
-
-  return (
-    <div dir="rtl" className="min-h-screen px-6 py-28 relative">
-      <div className="max-w-5xl mx-auto">
-        <PageHeader label="CLIENT VOICE" title="تقييمات العملاء" desc="تجارب حقيقية من عملاء تعاملوا معانا — بنفتخر بيها وبنتعلم منها." />
-
-        {!loading && items.length > 0 && (
-          <Reveal className="glass-panel rounded-3xl p-6 md:p-10 mb-14 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            {/* ملخص التقييم — بنفس روح Google / Trustpilot */}
-            <div className="text-center md:text-right md:border-l md:pl-8" style={{ borderColor: "var(--border)" }}>
-              <div className="text-5xl md:text-6xl font-black mb-2" style={{ fontFamily: "var(--font-cinzel), serif", color: "var(--gold-light)" }}>
-                {avgRating.toFixed(1)}
-              </div>
-              <div className="flex justify-center md:justify-start mb-2">
-                <ReviewStars rating={Math.round(avgRating)} size="text-xl" />
-              </div>
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>بناءً على {items.length} تقييم من عملائنا</p>
-            </div>
-
-            {/* توزيع النجوم */}
-            <div className="space-y-2">
-              {distribution.map((d) => (
-                <button
-                  key={d.star}
-                  onClick={() => setRatingFilter(ratingFilter === d.star ? 0 : d.star)}
-                  className="w-full flex items-center gap-3 group"
-                >
-                  <span className="text-xs w-10 flex-shrink-0 font-bold" style={{ color: ratingFilter === d.star ? "var(--gold-light)" : "var(--text-muted)" }}>{d.star} ★</span>
-                  <span className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
-                    <span className="block h-full rounded-full transition-all duration-500" style={{ width: `${d.pct}%`, background: `linear-gradient(90deg, ${GOLD}, ${GOLD3})` }} />
-                  </span>
-                  <span className="text-[11px] w-8 text-left flex-shrink-0" style={{ color: "var(--text-muted)" }}>{d.count}</span>
-                </button>
-              ))}
-              {ratingFilter > 0 && (
-                <button onClick={() => setRatingFilter(0)} className="text-[11px] font-bold mt-1" style={{ color: GOLD }}>
-                  ✕ مسح الفلتر
-                </button>
-              )}
-            </div>
-          </Reveal>
-        )}
-
-        {loading ? (
-          <LoadingState />
-        ) : items.length === 0 ? (
-          <EmptyState text="لسه مفيش تقييمات منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
-        ) : filtered.length === 0 ? (
-          <EmptyState text="مفيش تقييمات بالعدد ده من النجوم." />
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((r, i) => (
-              <ReviewCard key={r.id} r={r} delay={i * 60} />
-            ))}
-          </div>
-        )}
-
-        <Reveal delay={200} className="text-center mt-14">
-          <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>عايز تجربة زي دي مع براندك؟</p>
-          <a href={WA_LINK} target="_blank" rel="noreferrer" className="btn-primary">احجز استشارة مجانية</a>
-        </Reveal>
       </div>
     </div>
   );
@@ -2427,7 +2326,7 @@ function Navbar({ page, setPage, clientSession, notifications, unreadCount, onNo
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
-  const DIRECT_PAGES = ["home", "posts", "post-details", "services", "gallery", "portfolio-gallery", "case-studies", "blog", "reviews", "about", "contact"];
+  const DIRECT_PAGES = ["home", "posts", "post-details", "services", "gallery", "portfolio-gallery", "case-studies", "blog", "about", "contact"];
   const links = [
     { id: "home", label: "الرئيسية" },
     { id: "posts", label: "المنشورات" },
@@ -2435,8 +2334,7 @@ function Navbar({ page, setPage, clientSession, notifications, unreadCount, onNo
     { id: "gallery", label: "الباقات" },
     { id: "portfolio-gallery", label: "معرض الأعمال" },
     { id: "case-studies", label: "دراسات الحالة" },
-    { id: "blog", label: "المدونة" },
-    { id: "reviews", label: "التقييمات" },
+    { id: "blog", label: "البرومتات" },
     { id: "about", label: "من نحن" },
     { id: "contact", label: "تواصل معنا" },
   ];
@@ -2827,8 +2725,7 @@ export default function App() {
           onOpenPost={(id) => setSelectedPostId(id)}
         />
       )}
-      {page === "blog" && <BlogPage />}
-      {page === "reviews" && <ReviewsPage />}
+      {page === "blog" && <PromptsPage />}
       {page === "about" && <AboutPage setPage={setPage} />}
       {page === "contact" && <ContactPage />}
       {page === "builder" && <BuilderPage setPage={setPage} initialData={builderInitialData} />}
