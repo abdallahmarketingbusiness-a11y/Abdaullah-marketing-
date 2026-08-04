@@ -65,15 +65,18 @@ const ENTITY_CONFIG = {
     ],
   },
   blogPosts: {
-    label: "البرومتات",
+    label: "المدونة",
     titleField: "title",
-    titlePlaceholder: "عنوان البرومبت",
-    newLabel: "➕ برومبت جديد",
-    emptyLabel: "لا توجد برومتات حتى الآن.",
+    titlePlaceholder: "عنوان المقال",
+    newLabel: "➕ مقال جديد",
+    emptyLabel: "لا توجد مقالات حتى الآن.",
     fields: [
-      { key: "title", label: "عنوان البرومبت", type: "text" },
-      { key: "excerpt", label: "شرح البرومبت (وصف مختصر لاستخدامه)", type: "textarea" },
-      { key: "content", label: "نص البرومبت (اللي هيتنسخ للزائر)", type: "code" },
+      { key: "title", label: "العنوان", type: "text" },
+      { key: "category", label: "التصنيف", type: "text" },
+      { key: "read_time_minutes", label: "مدة القراءة (دقائق)", type: "number" },
+      { key: "excerpt", label: "مقتطف قصير", type: "textarea" },
+      { key: "content", label: "المحتوى الكامل (اختياري)", type: "textarea" },
+      { key: "cover_image_url", label: "صورة الغلاف", type: "image" },
     ],
   },
   socialPosts: {
@@ -230,15 +233,6 @@ function ContentFormModal({ entity, item, onClose, onSaved, flash }) {
             {f.type !== "checkbox" && <label style={labelStyle}>{f.label}</label>}
             {f.type === "textarea" && (
               <textarea rows={3} style={{ ...fieldStyle, resize: "vertical" }} value={form[f.key] || ""} onChange={(e) => update(f.key, e.target.value)} />
-            )}
-            {f.type === "code" && (
-              <textarea
-                rows={8}
-                dir="ltr"
-                style={{ ...fieldStyle, resize: "vertical", fontFamily: "monospace", textAlign: "left" }}
-                value={form[f.key] || ""}
-                onChange={(e) => update(f.key, e.target.value)}
-              />
             )}
             {f.type === "text" && (
               <input style={fieldStyle} value={form[f.key] || ""} onChange={(e) => update(f.key, e.target.value)} placeholder={f.key === cfg.titleField ? cfg.titlePlaceholder : ""} />
@@ -419,9 +413,7 @@ function EntitySection({ entity }) {
                   {entity === "sitePosts" && (
                     <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{postCategoryEmoji(item.category)} {postCategoryLabel(item.category)} {item.views_count ? `· 👁️ ${item.views_count}` : ""}</p>
                   )}
-                  {entity === "blogPosts" && item.excerpt && (
-                    <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{item.excerpt}</p>
-                  )}
+                  {entity === "blogPosts" && <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.category}</p>}
                   {entity === "caseStudies" && <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.industry}</p>}
                   {entity === "services" && (
                     <p style={{ color: "#888", fontSize: 11.5, margin: "4px 0" }}>{item.icon} {item.tag}</p>
@@ -458,7 +450,7 @@ const SUB_TABS = [
   { id: "services", label: "🛠️ خدماتي" },
   { id: "caseStudies", label: "📊 دراسات الحالة" },
   { id: "socialPosts", label: "🖼️ نماذج أعمال سوشيال ميديا" },
-  { id: "blogPosts", label: "🧠 البرومتات" },
+  { id: "blogPosts", label: "📝 المدونة" },
 ];
 
 export default function ContentManager() {

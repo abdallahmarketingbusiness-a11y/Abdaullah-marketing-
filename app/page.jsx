@@ -1349,7 +1349,7 @@ function PricingSection({ setPage, content = {} }) {
   ];
 
   return (
-    <section id="pricing" dir="rtl" style={{ background: "linear-gradient(180deg,#060606 0%,#0a0802 50%,#060606 100%)", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
+    <section id="pricing" dir="rtl" style={{ background: "transparent", padding: "90px 0 80px", position: "relative", overflow: "hidden" }}>
       {/* Background glow orbs */}
       <div style={{ position: "absolute", top: "10%", left: "5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(201,150,58,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: "10%", right: "5%", width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(110,231,247,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
@@ -2155,71 +2155,39 @@ function SocialContentShowcase() {
   );
 }
 
-function PromptsPage() {
+function BlogPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState(null);
   useEffect(() => {
     let alive = true;
     fetchPublished("blogPosts").then((data) => { if (alive) setItems(data); }).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
 
-  async function handleCopy(item) {
-    try {
-      await navigator.clipboard.writeText(item.content || "");
-    } catch {
-      // خطة بديلة بسيطة لو الكليبورد اتمنع
-      const ta = document.createElement("textarea");
-      ta.value = item.content || "";
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand("copy"); } catch {}
-      document.body.removeChild(ta);
-    }
-    setCopiedId(item.id);
-    setTimeout(() => setCopiedId((id) => (id === item.id ? null : id)), 2000);
-  }
-
   return (
     <div dir="rtl" className="min-h-screen px-6 py-28 relative">
       <div className="max-w-4xl mx-auto">
-        <PageHeader label="PROMPTS" title="البرومتات" desc="مكتبة برومتات جاهزة للذكاء الاصطناعي، بننشرها ليك بشكل دوري — انسخ اللي يعجبك واستخدمه على طول." />
+        <PageHeader label="BLOG" title="المدونة" desc="مقالات ونصائح في عالم التسويق الرقمي والبراندنج، بنشاركها معاك بشكل دوري." />
         {loading ? (
           <LoadingState />
         ) : items.length === 0 ? (
-          <EmptyState text="لسه مفيش برومتات منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
+          <EmptyState text="لسه مفيش مقالات منشورة — تقدر تضيفها من لوحة السوبر أدمن." />
         ) : (
           <div className="space-y-5">
             {items.map((b, i) => (
               <Reveal key={b.id} delay={i * 70}>
-                <div className="card-pro rounded-2xl p-6">
-                  <h3 className="text-base font-black mb-1" style={{ color: "var(--text-primary)" }}>{b.title}</h3>
-                  {b.excerpt && (
-                    <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--text-secondary)" }}>{b.excerpt}</p>
-                  )}
-                  {b.content && (
-                    <div className="relative rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-soft)" }}>
-                      <button
-                        onClick={() => handleCopy(b)}
-                        className="absolute top-2.5 left-2.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition"
-                        style={{
-                          border: "1px solid var(--gold)",
-                          background: copiedId === b.id ? "rgba(201,150,58,0.28)" : "rgba(201,150,58,0.1)",
-                          color: "var(--gold-light)",
-                        }}
-                      >
-                        {copiedId === b.id ? "✅ اتنسخ" : "📋 نسخ"}
-                      </button>
-                      <pre
-                        dir="ltr"
-                        className="text-xs whitespace-pre-wrap leading-relaxed overflow-x-auto"
-                        style={{ color: "var(--text-muted)", fontFamily: "monospace", margin: 0, padding: "14px 100px 14px 14px", textAlign: "left" }}
-                      >
-                        {b.content}
-                      </pre>
+                <div className="card-pro rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-5">
+                  <div className="relative w-full sm:w-28 h-20 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(201,150,58,0.16), rgba(201,150,58,0.04))", color: "var(--gold)" }}>
+                    {b.cover_image_url ? <Image src={b.cover_image_url} alt={b.title} fill sizes="112px" className="object-cover" /> : "✎"}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      {b.category && <span className="badge-gold">{b.category}</span>}
+                      <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{b.read_time_minutes || 4} دقائق قراءة</span>
                     </div>
-                  )}
+                    <h3 className="text-base font-black mb-1" style={{ color: "var(--text-primary)" }}>{b.title}</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{b.excerpt}</p>
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -2334,7 +2302,7 @@ function Navbar({ page, setPage, clientSession, notifications, unreadCount, onNo
     { id: "gallery", label: "الباقات" },
     { id: "portfolio-gallery", label: "معرض الأعمال" },
     { id: "case-studies", label: "دراسات الحالة" },
-    { id: "blog", label: "البرومتات" },
+    { id: "blog", label: "المدونة" },
     { id: "about", label: "من نحن" },
     { id: "contact", label: "تواصل معنا" },
   ];
@@ -2725,7 +2693,7 @@ export default function App() {
           onOpenPost={(id) => setSelectedPostId(id)}
         />
       )}
-      {page === "blog" && <PromptsPage />}
+      {page === "blog" && <BlogPage />}
       {page === "about" && <AboutPage setPage={setPage} />}
       {page === "contact" && <ContactPage />}
       {page === "builder" && <BuilderPage setPage={setPage} initialData={builderInitialData} />}

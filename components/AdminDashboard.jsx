@@ -97,7 +97,7 @@ const TABS = [
   { id: "analytics", label: "📈 تحليلات العملاء" },
   { id: "portal", label: "🗂️ بيانات لوحة العميل" },
   { id: "portfolio", label: "🖼️ معرض الأعمال" },
-  { id: "content", label: "🗞️ المحتوى (دراسات وحالات ومنشورات وبرومتات)" },
+  { id: "content", label: "🗞️ المحتوى (دراسات وحالات ومنشورات ومدونة)" },
   { id: "homepage", label: "🏠 الصفحة الرئيسية" },
   { id: "ai-chats", label: "🤖 محادثات الذكاء الاصطناعي" },
   { id: "testimonials", label: "🎓 الشهادات" },
