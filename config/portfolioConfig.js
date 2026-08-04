@@ -6,6 +6,7 @@ export const PORTFOLIO_TABLE = "portfolio_items";
 export const PORTFOLIO_IMAGES_TABLE = "portfolio_images";
 export const PORTFOLIO_SOURCE_FILES_TABLE = "portfolio_source_files";
 export const TESTIMONIALS_TABLE = "testimonials";
+export const CLIENT_REVIEWS_TABLE = "client_reviews";
 export const ABOUT_TABLE = "about_page";
 export const SETTINGS_TABLE = "site_settings";
 export const ACTIVITY_LOG_TABLE = "activity_log";
@@ -23,12 +24,18 @@ export const TESTIMONIAL_STATUS = {
   HIDDEN: "hidden",
 };
 
+export const REVIEW_STATUS = {
+  VISIBLE: "visible",
+  HIDDEN: "hidden",
+};
+
 export const STORAGE_BUCKETS = {
   PORTFOLIO: "portfolio",
   ABOUT: "about",
   SITE: "site",
   PORTFOLIO_SOURCES: "portfolio-sources",
   CLIENT_FILES: "client-files",
+  REVIEWS: "reviews",
 };
 
 export const PORTFOLIO_GALLERY = {
