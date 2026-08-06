@@ -90,7 +90,7 @@ export default function MarketingChatWidget({ clientSession, setPage }) {
         try {
           const data = await res.json();
           if (data?.error) msg = data.error;
-          // تفصيلة السبب الحقيقي (status/رسالة Gemini) بتتطبع في الـ console
+          // تفصيلة السبب الحقيقي (status/رسالة الموديل) بتتطبع في الـ console
           // بس عشان صاحب الموقع يقدر يشخّص المشكلة من غير ما تتعرض للعميل.
           if (data?.debug) console.error("Chat debug:", data.debug);
         } catch {}

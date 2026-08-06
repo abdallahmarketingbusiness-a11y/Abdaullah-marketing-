@@ -1,17 +1,18 @@
 // app/api/chat/route.js
 //
-// نقطة الاتصال الوحيدة بين شات الموقع وذكاء Gemini من Google.
-// كل الاتصال بيحصل من السيرفر عشان الـ API Key يفضل مخفي تمامًا عن المتصفح.
+// نقطة الاتصال الوحيدة بين شات الموقع وذكاء OpenRouter (بوابة موحدة لعدة
+// موديلات AI). كل الاتصال بيحصل من السيرفر عشان الـ API Key يفضل مخفي تمامًا
+// عن المتصفح.
 //
 // المتغير المطلوب في .env.local (وفي إعدادات Vercel):
-//   GEMINI_API_KEY=AIzaxxxxxxxx
+//   OPENROUTER_API_KEY=sk-or-v1-xxxxxxxx
 //
-// الموديل: gemini-flash-lite-latest — أخف وأرخص نسخة من Gemini، وحصتها
-// المجانية اليومية أعلى بكتير من gemini-flash-latest، وبرضو بيدعم Google
-// Search grounding (يقدر "يبحث" فعليًا على الإنترنت قبل ما يرد، مش بس يعتمد
-// على معرفته المحفوظة وقت التدريب) — ده بيخليه يجيب استراتيجيات وأساليب
-// حقيقية ومحدّثة من كبار المسوقين العالميين (Gary Vaynerchuk, Neil Patel,
-// Alex Hormozi, Seth Godin...) بدل ما يخمّن من الذاكرة بس.
+// 🔁 3 موديلات احتياطية بالترتيب (Automatic Failover): بنحاول أول موديل، ولو
+// فشل (Rate Limit / خطأ سيرفر / Timeout) بننقل تلقائيًا للموديل اللي بعده من
+// غير ما العميل يحس أو يضطر يعيد المحاولة بنفسه:
+//   1) deepseek/deepseek-chat-v3.1
+//   2) qwen/qwen3-30b-a3b
+//   3) google/gemini-2.5-flash
 //
 // ⚠️ الشات ده لازم العميل يكون مسجّل دخول (شوف MarketingChatWidget.jsx):
 // كل رسالة بتتحفظ في جدول ai_chat_messages مربوطة بمحادثة
@@ -33,11 +34,30 @@ import { getSupabaseService } from "../../../lib/supabaseServiceClient";
 
 export const runtime = "nodejs";
 // أقصى مدة تنفيذ للـ route ده على Vercel (اتضبط كمان في vercel.json).
-// ردود طويلة + بحث جوجل ممكن ياخدوا وقت أطول من الـ default (10 ثانية)،
-// فبنديله مساحة كافية عشان ميتقطعش/يعلّق في نص الرد.
+// ردود طويلة + احتمال تجربة أكتر من موديل عند الفشل ممكن ياخدوا وقت أطول من
+// الـ default (10 ثانية)، فبنديله مساحة كافية عشان ميتقطعش/يعلّق في نص الرد.
 export const maxDuration = 60;
 
-const MODEL = "gemini-flash-lite-latest";
+// قائمة الموديلات بالترتيب — أول واحد هو الأساسي، والباقي احتياطي بالترتيب.
+// عند فشل موديل (429 Rate Limit / 5xx خطأ سيرفر / Timeout)، بننقل تلقائيًا
+// للموديل اللي بعده في القائمة من غير أي تدخل من العميل.
+const MODELS = [
+  "deepseek/deepseek-chat-v3.1",
+  "qwen/qwen3-30b-a3b",
+  "google/gemini-2.5-flash",
+];
+
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// بيانات اختيارية بيطلبها OpenRouter لظهور الموقع في لوحة تحكمهم (رانكينج) —
+// مش إلزامية لكن بتحسّن دقة الإحصائيات وبتساعد لو احتجنا دعم منهم.
+const OPENROUTER_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://abdullahmarketing.com";
+const OPENROUTER_SITE_NAME = "Abdullah Marketing";
+
+// أقصى مهلة (بالميلي ثانية) لكل محاولة موديل لوحده قبل ما نعتبرها Timeout
+// وننقل للموديل اللي بعده. رقم معقول عشان مانستناش لحد ما maxDuration
+// الكلي للـ route يخلص من غير ما ناخد فرصة نجرب باقي الموديلات.
+const PER_MODEL_TIMEOUT_MS = 25000;
 
 // أقصى عدد توكنز للرد — رقم كبير عمدًا عشان الموديل يقدر يرد ردود طويلة
 // وتفصيلية (خطط مشاريع كاملة، استراتيجيات متعددة الخطوات) من غير ما يتقطع
@@ -80,10 +100,10 @@ const SYSTEM_PROMPT = `أنتَ "خبير عبدالله ماركتنج" — م�
 - **Russell Brunson**: الـ Sales Funnels وفكرة "Hook, Story, Offer" في أي محتوى تسويقي.
 - **Ann Handley / Marie Forleo وغيرهم من خبراء المحتوى والبيزنس النسائي** لما يكون مناسبًا.
 
-استخدم أدوات البحث المتاحة لك (Google Search) لما تحتاج تتأكد من معلومة حديثة، إحصائية، اتجاه
-سوق، أو تفصيلة عن أسلوب مسوّق معين — بدل ما تعتمد على الذاكرة بس. ده مهم جدًا في حالتين:
+لو مش متأكد من معلومة حديثة، إحصائية، اتجاه سوق، أو تفصيلة عن أسلوب مسوّق معين، قول ده بصراحة
+للعميل بدل ما تخترع رقم أو تفصيلة مش متأكد منها. ده مهم جدًا في حالتين:
 1) لما العميل يسأل عن اتجاه أو منصة أو خوارزمية حديثة ممكن تكون اتغيرت.
-2) لما تستشهد بأسلوب مسوّق مشهور معين — تأكد إن اللي بتقوله عنه دقيق فعلاً.
+2) لما تستشهد بأسلوب مسوّق مشهور معين — لو مش متأكد من دقة التفصيلة، وضّح ده.
 
 ═══════════════════════════════════
 خبرتك في إنشاء وتأسيس المشاريع (مهم جدًا)
@@ -164,9 +184,9 @@ const SYSTEM_PROMPT = `أنتَ "خبير عبدالله ماركتنج" — م�
 
 // System prompt واحد مدموج بيعمل مهمتين في نداء واحد بدل نداءين منفصلين:
 // (1) ملخص قصير للمحادثة (يظهر في لوحة الأدمن)، (2) تحديث ذاكرة العميل
-// الدائمة. الدمج ده بيقلل عدد استدعاءات Gemini من 3 لكل رسالة (رد + ملخص +
-// ذاكرة) لـ 2 بس (رد + نداء مدموج واحد) — توفير حقيقي في الكوتة المجانية
-// (Free Tier) من غير ما نفقد أي وظيفة من الاتنين.
+// الدائمة. الدمج ده بيقلل عدد استدعاءات الموديل من 3 لكل رسالة (رد + ملخص +
+// ذاكرة) لـ 2 بس (رد + نداء مدموج واحد) — توفير حقيقي في استهلاك الكوتة
+// من غير ما نفقد أي وظيفة من الاتنين.
 const SUMMARY_AND_MEMORY_SYSTEM_PROMPT = `عندك مهمتين منفصلتين تمامًا لمساعد ذكاء اصطناعي تسويقي اسمه
 "خبير عبدالله ماركتنج" — نفّذهم الاتنين ورجّع الناتج بالشكل المحدد تحت بالظبط.
 
@@ -206,15 +226,17 @@ function parseSummaryAndMemory(raw) {
   return { summary: summaryPart, memory: memoryPart };
 }
 
-function buildGeminiContents(rows) {
+// بيحوّل صفوف الرسائل من قاعدة البيانات لصيغة OpenAI-compatible messages
+// اللي OpenRouter بيستخدمها (role: "user" | "assistant" | "system").
+function buildChatMessages(rows) {
   return rows
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .slice(-MAX_HISTORY_MESSAGES)
     .map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
+      role: m.role === "assistant" ? "assistant" : "user",
       // مفيش قص للمحتوى هنا (كان .slice(0,6000) قبل كده) — العميل يقدر يبعت
       // ويستقبل رسائل طويلة عادي من غير بتر مفاجئ للسياق.
-      parts: [{ text: m.content }],
+      content: m.content,
     }));
 }
 
@@ -289,33 +311,76 @@ async function buildClientProfileText(supabaseService, clientId) {
   return lines.join("\n");
 }
 
-// نداء بسيط (غير Streaming) لـ Gemini — بيستخدم لتوليد الملخص/الذاكرة بعد كل تبادل
-async function callGeminiOnce({ apiKey, systemText, contents, maxTokens }) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      contents,
-      systemInstruction: { parts: [{ text: systemText }] },
-      generationConfig: { maxOutputTokens: maxTokens },
-    }),
-  });
-  if (!res.ok) return null;
-  const data = await res.json().catch(() => null);
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+function openRouterHeaders(apiKey) {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+    "HTTP-Referer": OPENROUTER_SITE_URL,
+    "X-Title": OPENROUTER_SITE_NAME,
+  };
+}
+
+// بيحدد هل الخطأ يستاهل نجرب الموديل اللي بعده في القائمة (Rate Limit /
+// Quota / خطأ سيرفر مؤقت / Timeout) ولا لأ (مثلاً خطأ في شكل الطلب نفسه —
+// ده هيفشل مع كل الموديلات فمفيش داعي نضيّع وقت نجربهم كلهم).
+function isFailoverWorthyStatus(status) {
+  // 429 = Rate limit / Quota exceeded
+  // 408 = Request Timeout
+  // 5xx = خطأ سيرفر مؤقت (بما فيها 502/503/504 اللي بتحصل مع OpenRouter وقت
+  // ضغط أو لما الموديل نفسه يبقى مش متاح مؤقتًا)
+  return status === 429 || status === 408 || (status >= 500 && status < 600);
+}
+
+// نداء بسيط (غير Streaming) لـ OpenRouter — بيستخدم لتوليد الملخص/الذاكرة
+// بعد كل تبادل. بيجرب كل موديل في MODELS بالترتيب، ولو موديل فشل بسبب
+// Rate Limit/خطأ سيرفر/Timeout بينتقل تلقائيًا للي بعده.
+async function callOpenRouterOnce({ apiKey, systemText, messages, maxTokens }) {
+  const fullMessages = [{ role: "system", content: systemText }, ...messages];
+
+  for (const model of MODELS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PER_MODEL_TIMEOUT_MS);
+    try {
+      const res = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: openRouterHeaders(apiKey),
+        body: JSON.stringify({
+          model,
+          messages: fullMessages,
+          max_tokens: maxTokens,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        console.error(`OpenRouter error (model=${model}):`, res.status, errText);
+        if (isFailoverWorthyStatus(res.status)) continue; // جرب الموديل اللي بعده
+        return null; // خطأ مش هيتحل بتغيير الموديل
+      }
+
+      const data = await res.json().catch(() => null);
+      const text = data?.choices?.[0]?.message?.content || null;
+      if (text) return text;
+      // رد فاضي/غير متوقع — جرب الموديل اللي بعده بدل ما نرجّع فاضي
+    } catch (err) {
+      clearTimeout(timer);
+      console.error(`OpenRouter request failed (model=${model}):`, err?.name || err);
+      // Timeout (AbortError) أو خطأ شبكة — جرب الموديل اللي بعده
+      continue;
+    }
+  }
+  return null;
 }
 
 export async function POST(req) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       return new Response(
         JSON.stringify({
-          error: "المساعد الذكي مش مفعّل لسه — لازم تضيف GEMINI_API_KEY في إعدادات السيرفر.",
+          error: "المساعد الذكي مش مفعّل لسه — لازم تضيف OPENROUTER_API_KEY في إعدادات السيرفر.",
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -391,7 +456,7 @@ export async function POST(req) {
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 
-    const contents = buildGeminiContents(historyRows || []);
+    const chatMessages = buildChatMessages(historyRows || []);
 
     // 4.5) هات ملف العميل الحقيقي (بيانات + آخر تحليلات + اشتراك) وذاكرته
     // الدائمة المتراكمة من محادثات سابقة، وحقنهم في الـ system prompt —
@@ -414,41 +479,69 @@ export async function POST(req) {
         ? `\n\n═══════════════════════════════════\nحقائق سابقة عن العميل (من محادثات سابقة)\n═══════════════════════════════════\n${memoryText}`
         : "");
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`;
-    const upstream = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: fullSystemPrompt }] },
-        // بيسمح للموديل يستخدم بحث جوجل الفعلي قبل ما يرد — ده اللي بيخليه
-        // "يبحث" عن أحدث أساليب/استراتيجيات كبار المسوقين بدل ما يعتمد على
-        // معرفته المحفوظة بس.
-        tools: [{ google_search: {} }],
-        generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
-      }),
-    });
+    const fullChatMessages = [{ role: "system", content: fullSystemPrompt }, ...chatMessages];
 
-    if (!upstream.ok || !upstream.body) {
-      const errText = await upstream.text().catch(() => "");
-      console.error("Gemini API error:", upstream.status, errText);
-      // بنحاول نطلع سبب حقيقي مختصر من رد جوجل (زي "API key not valid" أو
-      // "quota exceeded") بدل رسالة عامة ملهاش لازمة — من غير ما نسرّب أي جزء
-      // من المفتاح نفسه. لو مقدرناش نفهم شكل الرد، نرجع الرسالة العامة زي ما هي.
-      let detail = "";
+    // 🔁 نجرب الموديلات بالترتيب واحد ورا التاني (Automatic Failover). أول
+    // ما موديل يرد بنجاح (upstream.ok) بنوقف ونكمل بيه. لو موديل فشل بسبب
+    // Rate Limit/خطأ سيرفر/Timeout بننقل للي بعده تلقائيًا من غير ما العميل
+    // يحس أو يضطر يطلب تاني.
+    let upstream = null;
+    let usedModel = null;
+    let lastErrorStatus = null;
+    let lastErrorDetail = "";
+
+    for (const model of MODELS) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), PER_MODEL_TIMEOUT_MS);
       try {
-        const parsed = JSON.parse(errText);
-        detail = parsed?.error?.message || "";
-      } catch {
-        detail = errText?.slice(0, 200) || "";
+        const res = await fetch(OPENROUTER_URL, {
+          method: "POST",
+          headers: openRouterHeaders(apiKey),
+          body: JSON.stringify({
+            model,
+            messages: fullChatMessages,
+            max_tokens: MAX_OUTPUT_TOKENS,
+            stream: true,
+          }),
+          signal: controller.signal,
+        });
+
+        if (res.ok && res.body) {
+          clearTimeout(timer);
+          upstream = res;
+          usedModel = model;
+          break; // نجح — نوقف عن تجربة باقي الموديلات
+        }
+
+        clearTimeout(timer);
+        const errText = await res.text().catch(() => "");
+        console.error(`OpenRouter stream error (model=${model}):`, res.status, errText);
+        lastErrorStatus = res.status;
+        try {
+          const parsed = JSON.parse(errText);
+          lastErrorDetail = parsed?.error?.message || "";
+        } catch {
+          lastErrorDetail = errText?.slice(0, 200) || "";
+        }
+        if (!isFailoverWorthyStatus(res.status)) break; // خطأ مش هيتحل بتغيير الموديل
+        // غير كده: كمل الحلقة وجرب الموديل اللي بعده
+      } catch (err) {
+        clearTimeout(timer);
+        console.error(`OpenRouter stream request failed (model=${model}):`, err?.name || err);
+        lastErrorStatus = err?.name === "AbortError" ? 408 : 502;
+        lastErrorDetail = err?.name === "AbortError" ? "Request timed out" : String(err?.message || err);
+        // Timeout أو خطأ شبكة — جرب الموديل اللي بعده
       }
+    }
+
+    if (!upstream || !upstream.body) {
+      // بنحاول نطلع سبب حقيقي مختصر من رد آخر موديل جربناه (زي "API key
+      // invalid" أو "rate limit exceeded") بدل رسالة عامة ملهاش لازمة — من
+      // غير ما نسرّب أي جزء من المفتاح نفسه.
       return new Response(
         JSON.stringify({
           error: "حصل خطأ أثناء التواصل مع المساعد الذكي، جرب تاني كمان شوية.",
-          debug: `Gemini API responded with status ${upstream.status}${detail ? `: ${detail}` : ""}`,
+          debug: `All models failed. Last status ${lastErrorStatus}${lastErrorDetail ? `: ${lastErrorDetail}` : ""}`,
         }),
         { status: 502, headers: { "Content-Type": "application/json" } }
       );
@@ -479,12 +572,9 @@ export async function POST(req) {
 
               try {
                 const evt = JSON.parse(jsonStr);
-                // ملاحظة: لما google_search مفعّل، أول أجزاء الاستجابة ممكن
-                // تكون بيانات groundingMetadata من غير نص فعلي — بنتجاهلها
-                // ونستنى الجزء اللي فيه نص حقيقي.
-                const text = evt?.candidates?.[0]?.content?.parts
-                  ?.map((p) => p?.text || "")
-                  .join("");
+                // صيغة OpenAI-compatible streaming اللي OpenRouter بيستخدمها:
+                // كل chunk فيه choices[0].delta.content بيمثل جزء من النص.
+                const text = evt?.choices?.[0]?.delta?.content;
                 if (typeof text === "string" && text.length > 0) {
                   fullReply += text;
                   controller.enqueue(encoder.encode(text));
@@ -533,14 +623,14 @@ export async function POST(req) {
                 );
               }
 
-              const combinedContents = buildGeminiContents(allRows || []).concat([
-                { role: "user", parts: [{ text: combinedPromptParts.join("\n\n---\n\n") }] },
+              const combinedMessages = buildChatMessages(allRows || []).concat([
+                { role: "user", content: combinedPromptParts.join("\n\n---\n\n") },
               ]);
 
-              const combinedRaw = await callGeminiOnce({
+              const combinedRaw = await callOpenRouterOnce({
                 apiKey,
                 systemText: SUMMARY_AND_MEMORY_SYSTEM_PROMPT,
-                contents: combinedContents,
+                messages: combinedMessages,
                 maxTokens: 700,
               });
 
@@ -578,6 +668,9 @@ export async function POST(req) {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
         "X-Conversation-Id": conversationId,
+        // مفيد للتشخيص فقط — بيوضح أي موديل من الـ 3 فعليًا رد على الرسالة دي
+        // (مثلاً لو الأساسي فشل وحصل تحويل تلقائي لاحتياطي).
+        "X-Model-Used": usedModel || "",
       },
     });
   } catch (err) {
