@@ -18,6 +18,39 @@ export async function fetchVisibleReviews({ limit } = {}) {
   return data || [];
 }
 
+// ----------------------------------------------------------------------------
+// من جهة العميل (لوحة تحكم العميل) — العميل يضيف تقييمه بنفسه، وبيتحفظ
+// إجباريًا بحالة "قيد المراجعة" (hidden) لحد ما الأدمن يوافق عليه ويظهره.
+// بيستخدم supabase العادي (مش supabaseAdmin) عشان RLS يطبّق فعليًا.
+// ----------------------------------------------------------------------------
+export async function submitClientReview({ userId, clientName, companyName, rating, comment, reviewDate }) {
+  if (!userId) throw new Error("لازم تسجّل الدخول الأول.");
+  const payload = {
+    client_user_id: userId,
+    client_name: clientName,
+    company_name: companyName || "",
+    rating,
+    comment,
+    review_date: reviewDate || new Date().toISOString().slice(0, 10),
+    status: REVIEW_STATUS.HIDDEN, // إجباري: قيد المراجعة لحد ما الأدمن يوافق
+  };
+  const { data, error } = await supabase.from(CLIENT_REVIEWS_TABLE).insert([payload]).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// تقييمات العميل الحالي هو بس (سواء ظاهرة أو لسه قيد المراجعة)
+export async function fetchMyReviews(userId) {
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from(CLIENT_REVIEWS_TABLE)
+    .select("*")
+    .eq("client_user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
 export async function fetchAllReviewsForAdmin({ search = "" } = {}) {
   let query = supabaseAdmin.from(CLIENT_REVIEWS_TABLE).select("*");
   if (search && search.trim()) {

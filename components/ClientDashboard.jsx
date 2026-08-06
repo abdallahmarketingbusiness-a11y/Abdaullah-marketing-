@@ -39,7 +39,7 @@ import Toast from "./Toast";
 import FilePreviewModal from "./FilePreviewModal";
 import { AnalyticsTrendChart, PostsCompareList, InsightList } from "./AnalyticsCharts";
 import { fetchMySubscriptions, requestRenewal } from "../services/subscriptionService";
-import { fetchVisibleReviews } from "../services/reviewsService";
+import { fetchVisibleReviews, submitClientReview, fetchMyReviews } from "../services/reviewsService";
 
 // ============================================================================
 // إعدادات وعناصر عامة
@@ -985,53 +985,178 @@ function NotificationsSection({ notifications, onNotificationClick, onMarkAllRea
 }
 
 // ============================================================================
-// 11) تقييمات العملاء — يشوف فيها العميل آراء وتقييمات باقي العملاء
+// 11) تقييمات العملاء — يشوف فيها العميل آراء وتقييمات باقي العملاء، وكمان
+// يقدر يضيف تقييمه هو بنفسه (بيتحفظ "قيد المراجعة" لحد ما الأدمن يوافق عليه)
 // ============================================================================
-function ReviewsSection() {
+function ReviewStarsPicker({ value, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n)}
+          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 26, lineHeight: 1, padding: 0, color: n <= value ? GOLD : "#3a3a3a" }}
+          aria-label={`${n} نجوم`}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AddReviewForm({ profile, notify, onSubmitted }) {
+  const [companyName, setCompanyName] = useState(profile?.business_name || "");
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (comment.trim().length < 5) {
+      notify("error", "من فضلك اكتب تعليق أطول شوية.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await submitClientReview({
+        userId: profile?.user_id,
+        clientName: profile?.full_name || "عميل",
+        companyName: companyName.trim(),
+        rating,
+        comment: comment.trim(),
+      });
+      notify("success", "تم إرسال تقييمك ✅ هيظهر بعد مراجعة الأدمن.");
+      setComment("");
+      onSubmitted();
+    } catch (err) {
+      notify("error", "حصل خطأ أثناء إرسال التقييم، حاول تاني.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div style={{ marginBottom: 14 }}>
+        <span style={{ display: "block", fontSize: 12.5, color: "#aaa", marginBottom: 8, fontWeight: 700 }}>تقييمك</span>
+        <ReviewStarsPicker value={rating} onChange={setRating} />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 14, marginBottom: 14 }}>
+        <Field label="اسم الشركة / النشاط (اختياري)">
+          <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} style={inputStyle} />
+        </Field>
+      </div>
+      <Field label="تعليقك">
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          rows={4}
+          placeholder="احكيلنا عن تجربتك معانا..."
+          style={{ ...inputStyle, resize: "vertical" }}
+        />
+      </Field>
+      <button
+        type="submit"
+        disabled={saving}
+        style={{
+          marginTop: 14, padding: "12px 26px", borderRadius: 12, border: "none",
+          fontWeight: 800, fontSize: 13.5, cursor: saving ? "not-allowed" : "pointer",
+          background: `linear-gradient(135deg,${GOLD},${GOLD2})`, color: "#000",
+          opacity: saving ? 0.7 : 1,
+        }}
+      >
+        {saving ? "جاري الإرسال..." : "⭐ إرسال تقييمي"}
+      </button>
+    </form>
+  );
+}
+
+function ReviewsSection({ profile, notify }) {
   const [items, setItems] = useState(null);
+  const [myReviews, setMyReviews] = useState(null);
+
+  function loadMine() {
+    if (profile?.user_id) {
+      fetchMyReviews(profile.user_id).then(setMyReviews).catch(() => setMyReviews([]));
+    } else {
+      setMyReviews([]);
+    }
+  }
 
   useEffect(() => {
     fetchVisibleReviews().then(setItems).catch(() => setItems([]));
-  }, []);
+    loadMine();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.user_id]);
 
   if (!items) return <SectionLoading />;
-  if (items.length === 0) return <EmptyState text="لسه مفيش تقييمات منشورة." />;
 
-  const avgRating = items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length;
+  const avgRating = items.length ? items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length : 0;
+  const pendingReview = (myReviews || []).find((r) => r.status === "hidden");
+  const publishedReview = (myReviews || []).find((r) => r.status === "visible");
 
   return (
     <div>
-      <Card style={{ marginBottom: 18, display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 34, fontWeight: 900, color: GOLD3 }}>{avgRating.toFixed(1)}</div>
-          <div style={{ color: GOLD, fontSize: 13, letterSpacing: 1 }}>{"★".repeat(Math.round(avgRating))}{"☆".repeat(5 - Math.round(avgRating))}</div>
-        </div>
-        <div style={{ color: "#999", fontSize: 12.5 }}>
-          متوسط تقييم <strong style={{ color: "#fff" }}>{items.length}</strong> عميل تعاملوا معانا قبل كده
-        </div>
+      {/* ---------- إضافة تقييم جديد ---------- */}
+      <Card style={{ marginBottom: 20 }}>
+        <h3 style={{ color: "#fff", fontWeight: 900, fontSize: 14, marginBottom: 4 }}>✍️ شاركنا رأيك</h3>
+        <p style={{ color: "#888", fontSize: 12, marginBottom: 16 }}>تقييمك هيتراجع من فريقنا وهيظهر للعامة خلال وقت قصير.</p>
+
+        {pendingReview ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.3)" }}>
+            <span style={{ fontSize: 18 }}>⏳</span>
+            <span style={{ color: "#facc15", fontSize: 12.5, fontWeight: 700 }}>تقييمك اتبعت وهو دلوقتي قيد المراجعة.</span>
+          </div>
+        ) : publishedReview ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.3)" }}>
+            <span style={{ fontSize: 18 }}>✅</span>
+            <span style={{ color: "#4ade80", fontSize: 12.5, fontWeight: 700 }}>شكرًا! تقييمك ظاهر دلوقتي للعملاء التانيين.</span>
+          </div>
+        ) : (
+          <AddReviewForm profile={profile} notify={notify} onSubmitted={loadMine} />
+        )}
       </Card>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
-        {items.map((r) => (
-          <Card key={r.id}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              {r.avatar_url ? (
-                <img src={r.avatar_url} alt={r.client_name} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(201,150,58,0.14)", color: GOLD3, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 14, flexShrink: 0 }}>
-                  {getInitials(r.client_name)}
-                </div>
-              )}
-              <div style={{ minWidth: 0 }}>
-                <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{r.client_name}</div>
-                {r.company_name && <div style={{ color: "#888", fontSize: 11 }}>{r.company_name}</div>}
-              </div>
+      {/* ---------- تقييمات العملاء التانيين ---------- */}
+      {items.length === 0 ? (
+        <EmptyState text="لسه مفيش تقييمات منشورة." />
+      ) : (
+        <>
+          <Card style={{ marginBottom: 18, display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 34, fontWeight: 900, color: GOLD3 }}>{avgRating.toFixed(1)}</div>
+              <div style={{ color: GOLD, fontSize: 13, letterSpacing: 1 }}>{"★".repeat(Math.round(avgRating))}{"☆".repeat(5 - Math.round(avgRating))}</div>
             </div>
-            <div style={{ color: GOLD, fontSize: 12, marginBottom: 6 }}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</div>
-            <p style={{ color: "#ccc", fontSize: 12.5, margin: 0, lineHeight: 1.7 }}>{r.comment}</p>
+            <div style={{ color: "#999", fontSize: 12.5 }}>
+              متوسط تقييم <strong style={{ color: "#fff" }}>{items.length}</strong> عميل تعاملوا معانا قبل كده
+            </div>
           </Card>
-        ))}
-      </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
+            {items.map((r) => (
+              <Card key={r.id}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  {r.avatar_url ? (
+                    <img src={r.avatar_url} alt={r.client_name} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(201,150,58,0.14)", color: GOLD3, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 14, flexShrink: 0 }}>
+                      {getInitials(r.client_name)}
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{r.client_name}</div>
+                    {r.company_name && <div style={{ color: "#888", fontSize: 11 }}>{r.company_name}</div>}
+                  </div>
+                </div>
+                <div style={{ color: GOLD, fontSize: 12, marginBottom: 6 }}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</div>
+                <p style={{ color: "#ccc", fontSize: 12.5, margin: 0, lineHeight: 1.7 }}>{r.comment}</p>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

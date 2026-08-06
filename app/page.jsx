@@ -1728,7 +1728,7 @@ const testimonial = {
 // Placeholder fallback if the quote above is not yet confirmed by the client:
 // const testimonial = { client: "La Casa De Burger", quote: "[بانتظار رأي معتمد من العميل — يُستبدل هذا النص قبل نشر الموقع]", img: IMG_LCDB_13 };
 
-function TestimonialsSection({ content = {} }) {
+function TestimonialsSection({ content = {}, setPage }) {
   const eyebrow = content.eyebrow || "CLIENT VOICE";
   const title = content.title || "آراء العملاء";
   const subtitle = content.subtitle || "ثقة عملائنا هي أكبر دليل على جودة العمل";
@@ -1736,6 +1736,13 @@ function TestimonialsSection({ content = {} }) {
   const clientName = content.client_name || testimonial.client;
   const subLabel = content.sub_label || "La Casa De Burger — Restaurant";
   const imgSrc = content.image_url || testimonial.img;
+
+  const [moreReviews, setMoreReviews] = useState([]);
+  useEffect(() => {
+    fetchVisibleReviews({ limit: 6 })
+      .then(setMoreReviews)
+      .catch(() => setMoreReviews([]));
+  }, []);
 
   return (
     <section id="testimonials" dir="rtl" aria-labelledby="testimonials-heading" className="py-24 px-6 md:px-10" style={{ background: "transparent" }}>
@@ -1767,6 +1774,47 @@ function TestimonialsSection({ content = {} }) {
             </div>
           </div>
         </div>
+      </Reveal>
+
+      {/* تقييمات إضافية من عملاء آخرين — بنفس شكل وستايل الكارت اللي فوق */}
+      {moreReviews.length > 0 && (
+        <div className="max-w-6xl mx-auto mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {moreReviews.map((r, i) => (
+            <Reveal key={r.id} delay={i * 60}>
+              <div className="rounded-3xl p-7 border relative text-center transition duration-300 hover:-translate-y-1 h-full flex flex-col" style={{ background: "#161616", borderColor: "rgba(201,150,58,0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
+                <div className="text-3xl mb-3" style={{ color: GOLD, opacity: 0.6 }} aria-hidden="true">❝</div>
+
+                <p className="text-sm leading-relaxed mb-5 flex-1" style={{ color: "#ddd" }}>{r.comment}</p>
+
+                <div className="flex items-center justify-center gap-1 mb-5" aria-label={`تقييم ${r.rating} من 5 نجوم`} role="img">
+                  {Array.from({ length: 5 }).map((_, s) => (
+                    <span key={s} style={{ color: s < r.rating ? GOLD : "rgba(255,255,255,0.15)" }}>★</span>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-center gap-3">
+                  <div className="relative w-11 h-11 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-black text-sm" style={{ border: `2px solid ${GOLD}`, boxShadow: "0 0 20px rgba(201,150,58,0.3)", background: "rgba(201,150,58,0.1)", color: GOLD3 }}>
+                    {r.avatar_url ? (
+                      <Image src={r.avatar_url} alt={r.client_name} fill sizes="44px" className="object-cover" />
+                    ) : (
+                      (r.client_name || "?").trim().charAt(0)
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-white">{r.client_name}</div>
+                    {r.company_name && <div className="text-xs" style={{ color: "#666" }}>{r.company_name}</div>}
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      )}
+
+      <Reveal className="text-center mt-10">
+        <button onClick={() => setPage && setPage("reviews")} className="btn-outline text-xs !px-5 !py-2.5">
+          عرض كل التقييمات
+        </button>
       </Reveal>
     </section>
   );
@@ -2897,7 +2945,7 @@ export default function App() {
             const Comp = CORE_SECTION_COMPONENTS[section.section_key];
             if (!Comp) return null;
             const extraProps =
-              section.section_key === "hero" || section.section_key === "services" || section.section_key === "pricing"
+              section.section_key === "hero" || section.section_key === "services" || section.section_key === "pricing" || section.section_key === "testimonials"
                 ? { setPage }
                 : section.section_key === "posts-feed"
                 ? {

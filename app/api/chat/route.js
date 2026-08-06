@@ -6,11 +6,12 @@
 // المتغير المطلوب في .env.local (وفي إعدادات Vercel):
 //   GEMINI_API_KEY=AIzaxxxxxxxx
 //
-// الموديل: gemini-flash-latest — سريع، رخيص، وبيدعم Google Search grounding
-// (يقدر "يبحث" فعليًا على الإنترنت قبل ما يرد، مش بس يعتمد على معرفته
-// المحفوظة وقت التدريب) — ده بيخليه يجيب استراتيجيات وأساليب حقيقية ومحدّثة
-// من كبار المسوقين العالميين (Gary Vaynerchuk, Neil Patel, Alex Hormozi,
-// Seth Godin...) بدل ما يخمّن من الذاكرة بس.
+// الموديل: gemini-flash-lite-latest — أخف وأرخص نسخة من Gemini، وحصتها
+// المجانية اليومية أعلى بكتير من gemini-flash-latest، وبرضو بيدعم Google
+// Search grounding (يقدر "يبحث" فعليًا على الإنترنت قبل ما يرد، مش بس يعتمد
+// على معرفته المحفوظة وقت التدريب) — ده بيخليه يجيب استراتيجيات وأساليب
+// حقيقية ومحدّثة من كبار المسوقين العالميين (Gary Vaynerchuk, Neil Patel,
+// Alex Hormozi, Seth Godin...) بدل ما يخمّن من الذاكرة بس.
 //
 // ⚠️ الشات ده لازم العميل يكون مسجّل دخول (شوف MarketingChatWidget.jsx):
 // كل رسالة بتتحفظ في جدول ai_chat_messages مربوطة بمحادثة
@@ -36,7 +37,7 @@ export const runtime = "nodejs";
 // فبنديله مساحة كافية عشان ميتقطعش/يعلّق في نص الرد.
 export const maxDuration = 60;
 
-const MODEL = "gemini-flash-latest";
+const MODEL = "gemini-flash-lite-latest";
 
 // أقصى عدد توكنز للرد — رقم كبير عمدًا عشان الموديل يقدر يرد ردود طويلة
 // وتفصيلية (خطط مشاريع كاملة، استراتيجيات متعددة الخطوات) من غير ما يتقطع
